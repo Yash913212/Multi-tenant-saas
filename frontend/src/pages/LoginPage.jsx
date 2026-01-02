@@ -6,11 +6,15 @@ import { useAuth } from '../context/AuthContext.jsx';
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: '', password: '', tenantSubdomain: '' });
+  const [form, setForm] = useState({ email: '', password: '', tenantSubdomain: '', remember: true });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +25,7 @@ const LoginPage = () => {
     setMessage('');
     try {
       const { data } = await api.post('/auth/login', form);
-      login(data.data.token, data.data.user, data.data.expiresIn);
+      login(data.data.token, data.data.user, data.data.expiresIn, { remember: form.remember });
       navigate('/dashboard');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Login failed');
@@ -40,13 +44,29 @@ const LoginPage = () => {
             <span>Email</span>
             <input name="email" placeholder="you@company.com" type="email" value={form.email} onChange={handleChange} required />
           </label>
-          <label>
+          <label className="password-field">
             <span>Password</span>
-            <input name="password" placeholder="••••••••" type="password" value={form.password} onChange={handleChange} required />
+            <div className="input-with-action">
+              <input
+                name="password"
+                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+              <button type="button" className="ghost" onClick={() => setShowPassword((v) => !v)}>
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </label>
           <label>
             <span>Tenant Subdomain (optional)</span>
             <input name="tenantSubdomain" placeholder="acme" value={form.tenantSubdomain} onChange={handleChange} />
+          </label>
+          <label className="checkbox-row">
+            <input type="checkbox" name="remember" checked={form.remember} onChange={handleChange} />
+            <span>Remember me</span>
           </label>
           {message && <div className="alert alert-error">{message}</div>}
           <button disabled={loading} className="primary">{loading ? 'Signing in...' : 'Login'}</button>
