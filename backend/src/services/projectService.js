@@ -22,7 +22,7 @@ export async function createProject(tenantId, payload, actor) {
     const [project] = await db('projects')
         .insert({...payload, tenant_id: tenantId })
         .returning('*');
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'CREATE_PROJECT', entity_type: 'project', entity_id: project.id });
+    await logAction({ tenant_id: tenantId, user_id: actor ?.id || null, action: 'CREATE_PROJECT', entity_type: 'project', entity_id: project.id });
     return project;
 }
 
@@ -75,8 +75,10 @@ export async function updateProject(id, tenantId, updates, actor) {
         err.status = 404;
         throw err;
     }
-    const isOwner = project.created_by === actor.id;
-    const isAdmin = [ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN].includes(actor.role);
+    const actorId = actor ?.id;
+    const actorRole = actor ?.role;
+    const isOwner = project.created_by && actorId ? project.created_by === actorId : false;
+    const isAdmin = [ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN].includes(actorRole);
     if (!isOwner && !isAdmin) {
         const err = new Error('Forbidden');
         err.status = 403;
@@ -87,7 +89,13 @@ export async function updateProject(id, tenantId, updates, actor) {
         .where({ id, tenant_id: tenantId })
         .update({...updates, updated_at: db.fn.now() })
         .returning('*');
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'UPDATE_PROJECT', entity_type: 'project', entity_id: id });
+    await logAction({
+        tenant_id: tenantId,
+        user_id: actorId || null,
+        action: 'UPDATE_PROJECT',
+        entity_type: 'project',
+        entity_id: id
+    });
     return updated;
 }
 
@@ -98,8 +106,10 @@ export async function deleteProject(id, tenantId, actor) {
         err.status = 404;
         throw err;
     }
-    const isOwner = project.created_by === actor.id;
-    const isAdmin = [ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN].includes(actor.role);
+    const actorId = actor ?.id;
+    const actorRole = actor ?.role;
+    const isOwner = project.created_by && actorId ? project.created_by === actorId : false;
+    const isAdmin = [ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN].includes(actorRole);
     if (!isOwner && !isAdmin) {
         const err = new Error('Forbidden');
         err.status = 403;
@@ -107,5 +117,11 @@ export async function deleteProject(id, tenantId, actor) {
     }
 
     await db('projects').where({ id, tenant_id: tenantId }).del();
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'DELETE_PROJECT', entity_type: 'project', entity_id: id });
+    await logAction({
+        tenant_id: tenantId,
+        user_id: actorId || null,
+        action: 'DELETE_PROJECT',
+        entity_type: 'project',
+        entity_id: id
+    });
 }

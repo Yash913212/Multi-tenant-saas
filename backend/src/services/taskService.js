@@ -30,7 +30,7 @@ export async function createTask(tenantId, projectId, payload, actor) {
             due_date: payload.dueDate || null
         })
         .returning('*');
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'CREATE_TASK', entity_type: 'task', entity_id: task.id });
+    await logAction({ tenant_id: tenantId, user_id: actor?.id || null, action: 'CREATE_TASK', entity_type: 'task', entity_id: task.id });
     return task;
 }
 
@@ -56,9 +56,7 @@ export async function listTasks(tenantId, projectId, { status, assignedTo, prior
     return {
         tasks: tasks.map((t) => ({
             ...t,
-            assignedTo: t.assigned_to ?
-                { id: t.assigned_to, fullName: t.assigned_full_name, email: t.assigned_email } :
-                null
+            assignedTo: t.assigned_to ? { id: t.assigned_to, fullName: t.assigned_full_name, email: t.assigned_email } : null
         })),
         total: Number(count) || 0,
         pagination: {
@@ -81,7 +79,7 @@ export async function updateTaskStatus(id, tenantId, status, actor) {
         throw err;
     }
     const [updated] = await db('tasks').where({ id, tenant_id: tenantId }).update({ status, updated_at: db.fn.now() }).returning('*');
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'UPDATE_TASK_STATUS', entity_type: 'task', entity_id: id });
+    await logAction({ tenant_id: tenantId, user_id: actor?.id || null, action: 'UPDATE_TASK_STATUS', entity_type: 'task', entity_id: id });
     return updated;
 }
 
@@ -103,21 +101,21 @@ export async function updateTask(id, tenantId, updates, actor) {
     }
 
     const payload = {
-        title: updates.title ? ? task.title,
-        description: updates.description ? ? task.description,
-        status: updates.status ? ? task.status,
-        priority: updates.priority ? ? task.priority,
-        assigned_to: updates.hasOwnProperty('assignedTo') ? updates.assignedTo : task.assigned_to,
-        due_date: updates.hasOwnProperty('dueDate') ? updates.dueDate : task.due_date,
+        title: updates.title ?? task.title,
+        description: updates.description ?? task.description,
+        status: updates.status ?? task.status,
+        priority: updates.priority ?? task.priority,
+        assigned_to: Object.prototype.hasOwnProperty.call(updates, 'assignedTo') ? updates.assignedTo : task.assigned_to,
+        due_date: Object.prototype.hasOwnProperty.call(updates, 'dueDate') ? updates.dueDate : task.due_date,
         updated_at: db.fn.now()
     };
 
     const [updated] = await db('tasks').where({ id, tenant_id: tenantId }).update(payload).returning('*');
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'UPDATE_TASK', entity_type: 'task', entity_id: id });
+    await logAction({ tenant_id: tenantId, user_id: actor?.id || null, action: 'UPDATE_TASK', entity_type: 'task', entity_id: id });
     return updated;
 }
 
 export async function deleteTask(id, tenantId, actor) {
     await db('tasks').where({ id, tenant_id: tenantId }).del();
-    await logAction({ tenant_id: tenantId, user_id: actor ? .id || null, action: 'DELETE_TASK', entity_type: 'task', entity_id: id });
+    await logAction({ tenant_id: tenantId, user_id: actor?.id || null, action: 'DELETE_TASK', entity_type: 'task', entity_id: id });
 }

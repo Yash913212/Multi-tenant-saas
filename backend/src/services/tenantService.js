@@ -33,8 +33,8 @@ export async function listTenants({ page = 1, limit = 10, status, subscriptionPl
         })),
         pagination: {
             currentPage: Number(page),
-            totalPages: Math.ceil((Number(totalResult ? .count) || 0) / sanitizedLimit) || 0,
-            totalTenants: Number(totalResult ? .count) || 0,
+            totalPages: Math.ceil((Number(totalResult ?.count) || 0) / sanitizedLimit) || 0,
+            totalTenants: Number(totalResult ?.count) || 0,
             limit: sanitizedLimit
         }
     };
@@ -67,7 +67,7 @@ export async function updateTenant(id, payload, actor) {
     const updates = {};
     if (payload.name) updates.name = payload.name;
 
-    const isSuper = actor ? .role === ROLES.SUPER_ADMIN;
+    const isSuper = actor ?.role === ROLES.SUPER_ADMIN;
     if (!isSuper && (payload.status || payload.subscriptionPlan || payload.maxUsers || payload.maxProjects)) {
         const err = new Error('Forbidden');
         err.status = 403;
@@ -78,8 +78,8 @@ export async function updateTenant(id, payload, actor) {
         if (payload.status) updates.status = payload.status;
         if (payload.subscriptionPlan) {
             updates.subscription_plan = payload.subscriptionPlan;
-            updates.max_users = PLAN_LIMITS[payload.subscriptionPlan] ? .max_users || tenant.max_users;
-            updates.max_projects = PLAN_LIMITS[payload.subscriptionPlan] ? .max_projects || tenant.max_projects;
+            updates.max_users = PLAN_LIMITS[payload.subscriptionPlan] ?.max_users || tenant.max_users;
+            updates.max_projects = PLAN_LIMITS[payload.subscriptionPlan] ?.max_projects || tenant.max_projects;
         }
         if (payload.maxUsers) updates.max_users = payload.maxUsers;
         if (payload.maxProjects) updates.max_projects = payload.maxProjects;
@@ -89,7 +89,7 @@ export async function updateTenant(id, payload, actor) {
 
     const [updated] = await db('tenants').where({ id }).update(updates).returning('*');
 
-    await logAction({ tenant_id: actor ? .tenant_id || null, user_id: actor ? .id || null, action: 'UPDATE_TENANT', entity_type: 'tenant', entity_id: id });
+    await logAction({ tenant_id: actor ?.tenant_id || null, user_id: actor ?.id || null, action: 'UPDATE_TENANT', entity_type: 'tenant', entity_id: id });
 
     return updated;
 }
