@@ -1,0 +1,26 @@
+{
+    "testCredentials": {
+        "superAdmin": {
+            "email": "superadmin@system.com",
+            "password": "Admin@123",
+            "note": "Super admin login does not require tenant context"
+        },
+        "tenantAdmin": {
+            "email": "admin@demo.com",
+            "password": "Demo@123",
+            "tenantSubdomain": "demo"
+        },
+        "users": [
+            {
+                "email": "user1@demo.com",
+                "password": "User@123",
+                "tenantSubdomain": "demo"
+            },
+            {
+                "email": "user2@demo.com",
+                "password": "User@123",
+                "tenantSubdomain": "demo"
+            }
+        ]
+    }
+}
