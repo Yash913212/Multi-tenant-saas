@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import ProjectDetailsPage from './pages/ProjectDetailsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
+import TasksPage from './pages/TasksPage.jsx';
+import TenantsPage from './pages/TenantsPage.jsx';
 import Layout from './components/Layout.jsx';
 import Spinner from './components/Spinner.jsx';
 
@@ -52,6 +54,22 @@ const App = () => {
           element={
             <ProtectedRoute>
               <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tenants"
+          element={
+            <ProtectedRoute>
+              <TenantsPage />
             </ProtectedRoute>
           }
         />
