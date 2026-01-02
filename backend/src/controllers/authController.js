@@ -59,8 +59,8 @@ export const logoutHandler = async(req, res) => {
 export const healthHandler = async(_req, res) => {
     try {
         await db.raw('SELECT 1');
-        return res.status(200).json({ status: 'ok', database: 'connected' });
+        return successResponse(res, 'Health check', { api: 'ok', database: 'connected' }, 200);
     } catch (err) {
-        return res.status(500).json({ status: 'error', database: 'disconnected', error: err.message });
+        return errorResponse(res, 'Health check failed', 500, { database: 'disconnected', error: err.message });
     }
 };
