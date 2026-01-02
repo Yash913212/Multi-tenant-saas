@@ -22,6 +22,7 @@ const ProjectDetailsPage = () => {
   const [taskForm, setTaskForm] = useState(defaultTask);
   const [editingTask, setEditingTask] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [taskStats, setTaskStats] = useState({ total: 0, completed: 0, in_progress: 0, todo: 0, overdue: 0 });
 
   const canEdit = useMemo(() => ['super_admin', 'tenant_admin', 'user'].includes(user?.role), [user]);
   const tenantId = useMemo(() => user?.tenant?.id || user?.tenantId || user?.tenant_id, [user]);
@@ -45,6 +46,21 @@ const ProjectDetailsPage = () => {
       const payload = data.data || {};
       setTasks(payload.tasks || []);
       setPagination(payload.pagination || { currentPage: 1, totalPages: 1 });
+
+      const stats = (payload.tasks || []).reduce((acc, task) => {
+        acc.total += 1;
+        if (task.status === 'completed') acc.completed += 1;
+        else if (task.status === 'in_progress') acc.in_progress += 1;
+        else acc.todo += 1;
+
+        if (task.due_date) {
+          const today = new Date();
+          const due = new Date(task.due_date);
+          if (due < new Date(today.toDateString()) && task.status !== 'completed') acc.overdue += 1;
+        }
+        return acc;
+      }, { total: 0, completed: 0, in_progress: 0, todo: 0, overdue: 0 });
+      setTaskStats(stats);
     } catch (err) {
       setMessage(err.response?.data?.message || 'Failed to load tasks');
     } finally {
@@ -124,6 +140,13 @@ const ProjectDetailsPage = () => {
     loadTasks(1);
   };
 
+  const quickFilter = (status) => {
+    setFilters((prev) => ({ ...prev, status }));
+    loadTasks(1);
+  };
+
+  const completion = taskStats.total ? Math.round((taskStats.completed / taskStats.total) * 100) : 0;
+
   if (!project) return <div className="container"><Spinner label="Loading project..." /></div>;
 
   return (
@@ -143,6 +166,29 @@ const ProjectDetailsPage = () => {
         <div className="card-subheader">
           <h3>Tasks</h3>
           {canEdit && <button className="primary" onClick={() => openTaskModal(null)}>New Task</button>}
+        </div>
+
+        <div className="grid four-cols compact">
+          <div className="stat-card">
+            <p className="muted">Total</p>
+            <h2>{taskStats.total}</h2>
+          </div>
+          <div className="stat-card">
+            <p className="muted">In progress</p>
+            <h2>{taskStats.in_progress}</h2>
+          </div>
+          <div className="stat-card">
+            <p className="muted">Completed</p>
+            <h2>{taskStats.completed}</h2>
+            <p className="muted">{completion}% complete</p>
+          </div>
+          <div className="stat-card">
+            <p className="muted">Overdue</p>
+            <h2>{taskStats.overdue}</h2>
+            <div className="progress" aria-label="Task completion">
+              <div className="progress-bar" style={{ width: `${completion}%` }}></div>
+            </div>
+          </div>
         </div>
 
         <form className="grid four-cols compact" onSubmit={applyFilters}>
@@ -179,6 +225,13 @@ const ProjectDetailsPage = () => {
             <button className="ghost" type="submit">Apply</button>
           </div>
         </form>
+
+        <div className="chip-row">
+          <button className={`chip ${filters.status === '' ? 'chip-active' : ''}`} onClick={() => quickFilter('')}>All</button>
+          <button className={`chip ${filters.status === 'todo' ? 'chip-active' : ''}`} onClick={() => quickFilter('todo')}>To Do</button>
+          <button className={`chip ${filters.status === 'in_progress' ? 'chip-active' : ''}`} onClick={() => quickFilter('in_progress')}>In Progress</button>
+          <button className={`chip ${filters.status === 'completed' ? 'chip-active' : ''}`} onClick={() => quickFilter('completed')}>Completed</button>
+        </div>
 
         {message && <div className="alert alert-info">{message}</div>}
 
