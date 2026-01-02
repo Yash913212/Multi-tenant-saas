@@ -20,6 +20,7 @@ const ProjectsPage = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [stats, setStats] = useState({ total: 0, active: 0, archived: 0, tasks: 0 });
 
   const load = async (page = 1) => {
     setLoading(true);
@@ -28,6 +29,14 @@ const ProjectsPage = () => {
       const result = data.data || {};
       setProjects(result.projects || []);
       setPagination(result.pagination || { currentPage: 1, totalPages: 1 });
+
+      const aggregate = (result.projects || []).reduce((acc, p) => {
+        acc.total += 1;
+        if (p.status === 'archived') acc.archived += 1; else acc.active += 1;
+        acc.tasks += p.taskCount || 0;
+        return acc;
+      }, { total: 0, active: 0, archived: 0, tasks: 0 });
+      setStats(aggregate);
     } catch (err) {
       setMessage(err.response?.data?.message || 'Failed to load projects');
     } finally {
@@ -68,6 +77,17 @@ const ProjectsPage = () => {
     }
   };
 
+  const toggleStatus = async (project) => {
+    const next = project.status === 'archived' ? 'active' : 'archived';
+    try {
+      await api.patch(`/projects/${project.id}`, { status: next });
+      setMessage(`Project ${next === 'archived' ? 'archived' : 'restored'}`);
+      await load(pagination.currentPage);
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Failed to update project status');
+    }
+  };
+
   const remove = async (projectId) => {
     if (!window.confirm('Delete this project?')) return;
     try {
@@ -83,12 +103,36 @@ const ProjectsPage = () => {
     load(1);
   };
 
+  const resetFilters = () => {
+    setFilters({ search: '', status: '' });
+    load(1);
+  };
+
   return (
     <div className="container space-lg">
       <div className="card">
         <div className="card-header">
           <h2>Projects</h2>
           {canManage && <button className="primary" onClick={openCreate}>New Project</button>}
+        </div>
+
+        <div className="grid four-cols compact">
+          <div className="stat-card">
+            <p className="muted">Total</p>
+            <h2>{stats.total}</h2>
+          </div>
+          <div className="stat-card">
+            <p className="muted">Active</p>
+            <h2>{stats.active}</h2>
+          </div>
+          <div className="stat-card">
+            <p className="muted">Archived</p>
+            <h2>{stats.archived}</h2>
+          </div>
+          <div className="stat-card">
+            <p className="muted">Tasks</p>
+            <h2>{stats.tasks}</h2>
+          </div>
         </div>
 
         <form className="grid three-cols compact" onSubmit={applyFilters}>
@@ -106,6 +150,7 @@ const ProjectsPage = () => {
           </label>
           <div className="actions-row">
             <button type="submit" className="ghost">Apply</button>
+            <button type="button" className="ghost" onClick={resetFilters}>Reset</button>
           </div>
         </form>
 
@@ -121,6 +166,7 @@ const ProjectsPage = () => {
                 <th>Status</th>
                 <th>Tasks</th>
                 <th>Owner</th>
+                <th>Updated</th>
                 <th></th>
               </tr>
             </thead>
@@ -131,11 +177,13 @@ const ProjectsPage = () => {
                   <td><StatusBadge value={p.status} /></td>
                   <td>{p.completedTaskCount ? `${p.completedTaskCount}/${p.taskCount || 0}` : p.taskCount || 0}</td>
                   <td>{p.createdBy?.fullName || '—'}</td>
+                  <td>{p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '—'}</td>
                   <td className="table-actions">
                     <Link to={`/projects/${p.id}`} className="ghost">Open</Link>
                     {canManage && (
                       <>
                         <button className="ghost" onClick={() => openEdit(p)}>Edit</button>
+                        <button className="ghost" onClick={() => toggleStatus(p)}>{p.status === 'archived' ? 'Restore' : 'Archive'}</button>
                         <button className="ghost danger" onClick={() => remove(p.id)}>Delete</button>
                       </>
                     )}
