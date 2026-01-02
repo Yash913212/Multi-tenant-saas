@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import Spinner from '../components/Spinner.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import { Link } from 'react-router-dom';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -12,6 +12,7 @@ const DashboardPage = () => {
   const [tenantStats, setTenantStats] = useState(null);
   const [recentProjects, setRecentProjects] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
+  const [taskSummary, setTaskSummary] = useState({ total: 0, todo: 0, in_progress: 0, completed: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -19,6 +20,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const fetchAll = async() => {
+      setError('');
       try {
         const [healthRes, projectsRes] = await Promise.all([
           api.get('/health'),
@@ -33,10 +35,32 @@ const DashboardPage = () => {
           setTenantStats(tenantRes.data.data?.stats || null);
         }
 
-        if (user && projects.length) {
-          const taskResults = await Promise.all(projects.map((p) => api.get(`/projects/${p.id}/tasks`, { params: { assignedTo: user.id, limit: 5 } }).catch(() => ({ data: { data: { tasks: [] } } }))));
-          const collected = taskResults.flatMap((r) => r.data.data?.tasks || r.data.data || []);
-          setMyTasks(collected.slice(0, 5));
+        if (projects.length) {
+          const taskResults = await Promise.all(projects.map((p) => api.get(`/projects/${p.id}/tasks`, { params: { limit: 100 } }).catch(() => ({ data: { data: { tasks: [] } } }))));
+          const allTasks = taskResults.flatMap((r) => r.data.data?.tasks || r.data.data || []);
+
+          const summary = allTasks.reduce((acc, task) => {
+            acc.total += 1;
+            if (task.status === 'completed') acc.completed += 1;
+            else if (task.status === 'in_progress') acc.in_progress += 1;
+            else acc.todo += 1;
+
+            if (task.due_date) {
+              const today = new Date();
+              const due = new Date(task.due_date);
+              if (due < new Date(today.toDateString()) && task.status !== 'completed') acc.overdue += 1;
+            }
+            return acc;
+          }, { total: 0, todo: 0, in_progress: 0, completed: 0, overdue: 0 });
+          setTaskSummary(summary);
+
+          if (user) {
+            const mine = allTasks
+              .filter((t) => t.assigned_to === user.id || t.assignedTo?.id === user.id)
+              .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
+              .slice(0, 5);
+            setMyTasks(mine);
+          }
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load dashboard');
@@ -52,27 +76,26 @@ const DashboardPage = () => {
 
   return (
     <div className="container space-lg">
-      <div className="grid three-cols">
+      <div className="grid four-cols">
         <div className="card stat-card">
-          <p className="muted">Tenant</p>
+          <p className="muted">Workspace</p>
           <h2>{tenantId ? (user?.tenant?.name || 'Your workspace') : 'Super Admin'}</h2>
           <p><StatusBadge value={user?.role} /></p>
         </div>
         <div className="card stat-card">
-          <p className="muted">API</p>
+          <p className="muted">Health</p>
           <h2>{health?.api || 'unknown'}</h2>
           <p className="muted">Database: {health?.database || 'unknown'}</p>
         </div>
         <div className="card stat-card">
-          <p className="muted">Plan Limits</p>
-          {user?.tenant?.subscriptionPlan ? (
-            <>
-              <h2>{user.tenant.subscriptionPlan}</h2>
-              <p className="muted">Users: {user.tenant.maxUsers || '—'} • Projects: {user.tenant.maxProjects || '—'}</p>
-            </>
-          ) : (
-            <p className="muted">Not linked to a tenant</p>
-          )}
+          <p className="muted">Task snapshot</p>
+          <h2>{taskSummary.total || 0} tasks</h2>
+          <p className="muted">{taskSummary.in_progress} in progress • {taskSummary.todo} todo • {taskSummary.overdue} overdue</p>
+        </div>
+        <div className="card stat-card">
+          <p className="muted">My queue</p>
+          <h2>{myTasks.length} tasks</h2>
+          <p className="muted">Assigned to you</p>
         </div>
       </div>
 
