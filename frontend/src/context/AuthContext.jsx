@@ -4,26 +4,34 @@ import api, { registerUnauthorizedHandler, setAuthToken } from '../services/api.
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const getStored = (key) => {
+    const fromLocal = localStorage.getItem(key);
+    if (fromLocal) return fromLocal;
+    const fromSession = sessionStorage.getItem(key);
+    return fromSession || null;
+  };
+
+  const [token, setToken] = useState(() => getStored('token'));
   const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem('user');
+    const raw = getStored('user');
     return raw ? JSON.parse(raw) : null;
   });
   const [expiresAt, setExpiresAt] = useState(() => {
-    const raw = localStorage.getItem('expiresAt');
+    const raw = getStored('expiresAt');
     return raw ? Number(raw) : null;
   });
   const [loading, setLoading] = useState(true);
 
   const isExpired = useMemo(() => (expiresAt ? Date.now() > expiresAt : false), [expiresAt]);
 
-  const persistSession = (jwt, userData, expiration) => {
+  const persistSession = (jwt, userData, expiration, { remember } = { remember: true }) => {
     setToken(jwt);
     setUser(userData || null);
     setExpiresAt(expiration || null);
-    if (jwt) localStorage.setItem('token', jwt);
-    if (userData) localStorage.setItem('user', JSON.stringify(userData));
-    if (expiration) localStorage.setItem('expiresAt', String(expiration));
+    const storage = remember ? localStorage : sessionStorage;
+    if (jwt) storage.setItem('token', jwt);
+    if (userData) storage.setItem('user', JSON.stringify(userData));
+    if (expiration) storage.setItem('expiresAt', String(expiration));
   };
 
   const clearSession = () => {
@@ -33,6 +41,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('expiresAt');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('expiresAt');
   };
 
   const logout = async(silent = false) => {
@@ -50,16 +61,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await api.get('/auth/me');
       setUser(data.data);
-      localStorage.setItem('user', JSON.stringify(data.data));
+      const storage = getStored('token') === localStorage.getItem('token') ? localStorage : sessionStorage;
+      storage.setItem('user', JSON.stringify(data.data));
     } catch (err) {
       await logout(true);
       throw err;
     }
   };
 
-  const login = (jwt, userData, expiresInSeconds) => {
+  const login = (jwt, userData, expiresInSeconds, { remember = true } = {}) => {
     const expiration = expiresInSeconds ? Date.now() + Number(expiresInSeconds) * 1000 : null;
-    persistSession(jwt, userData, expiration);
+    persistSession(jwt, userData, expiration, { remember });
     setAuthToken(jwt);
   };
 
