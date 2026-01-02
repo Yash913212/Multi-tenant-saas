@@ -1,3 +1,4 @@
+// Axios client for API calls
 import axios from 'axios';
 
 const api = axios.create({
