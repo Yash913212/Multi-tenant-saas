@@ -23,10 +23,10 @@ const UsersPage = () => {
 
   const path = tenantId ? `/tenants/${tenantId}/users` : '/users';
 
-  const load = async(page = 1) => {
+  const load = async(page = 1, nextFilters = filters) => {
     setLoading(true);
     try {
-      const { data } = await api.get(path, { params: { ...filters, page, limit: 10 } });
+      const { data } = await api.get(path, { params: { ...nextFilters, page, limit: 10 } });
       const payload = data.data || {};
       setUsers(payload.users || []);
       setPagination(payload.pagination || { currentPage: 1, totalPages: 1 });
@@ -71,6 +71,15 @@ const UsersPage = () => {
     }
   };
 
+  const toggleActive = async(u) => {
+    try {
+      await api.patch(`/users/${u.id}`, { isActive: !u.is_active });
+      await load(pagination.currentPage);
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Failed to update status');
+    }
+  };
+
   const remove = async(userId) => {
     if (!window.confirm('Delete this user?')) return;
     try {
@@ -84,6 +93,18 @@ const UsersPage = () => {
   const applyFilters = (e) => {
     e.preventDefault();
     load(1);
+  };
+
+  const resetFilters = () => {
+    const cleared = { search: '', role: '', isActive: '' };
+    setFilters(cleared);
+    load(1, cleared);
+  };
+
+  const handleRoleChip = (role) => {
+    const next = { ...filters, role };
+    setFilters(next);
+    load(1, next);
   };
 
   return (
@@ -118,8 +139,16 @@ const UsersPage = () => {
           </label>
           <div className="actions-row">
             <button type="submit" className="ghost">Apply</button>
+            <button type="button" className="ghost" onClick={resetFilters}>Reset</button>
           </div>
         </form>
+
+        <div className="chip-row">
+          <button className={`chip ${filters.role === '' ? 'chip-active' : ''}`} onClick={() => handleRoleChip('')}>All roles</button>
+          <button className={`chip ${filters.role === 'user' ? 'chip-active' : ''}`} onClick={() => handleRoleChip('user')}>Users</button>
+          <button className={`chip ${filters.role === 'tenant_admin' ? 'chip-active' : ''}`} onClick={() => handleRoleChip('tenant_admin')}>Tenant Admins</button>
+          {user?.role === 'super_admin' && <button className={`chip ${filters.role === 'super_admin' ? 'chip-active' : ''}`} onClick={() => handleRoleChip('super_admin')}>Super Admins</button>}
+        </div>
 
         {message && <div className="alert alert-info">{message}</div>}
 
@@ -146,6 +175,7 @@ const UsersPage = () => {
                   <td className="table-actions">
                     {canManage && (
                       <>
+                        <button className="ghost" onClick={() => toggleActive(u)}>{u.is_active ? 'Deactivate' : 'Activate'}</button>
                         <button className="ghost" onClick={() => openEdit(u)}>Edit</button>
                         <button className="ghost danger" onClick={() => remove(u.id)}>Delete</button>
                       </>
