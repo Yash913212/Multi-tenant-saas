@@ -1,0 +1,234 @@
+# Database Entity Relationship Diagram (ERD)
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                            TENANTS TABLE                                │
+├────────────────────────────────────────────────────────────────────────┤
+│ PK │ id                    UUID                                         │
+│    │ name                  VARCHAR(255)   NOT NULL                      │
+│    │ subdomain             VARCHAR(63)    UNIQUE NOT NULL              │
+│    │ status                ENUM('active','suspended','trial')          │
+│    │ subscription_plan     ENUM('free','pro','enterprise')             │
+│    │ max_users             INTEGER        DEFAULT based on plan        │
+│    │ max_projects          INTEGER        DEFAULT based on plan        │
+│    │ created_at            TIMESTAMP      DEFAULT NOW()                │
+│    │ updated_at            TIMESTAMP      DEFAULT NOW()                │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ 1:N
+                                    │
+         ┌──────────────────────────┼──────────────────────────┐
+         │                          │                          │
+         ▼                          ▼                          ▼
+┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
+│    USERS TABLE      │   │  PROJECTS TABLE     │   │ AUDIT_LOGS TABLE    │
+├─────────────────────┤   ├─────────────────────┤   ├─────────────────────┤
+│ PK │ id        UUID │   │ PK │ id        UUID │   │ PK │ id        UUID │
+│ FK │ tenant_id UUID │   │ FK │ tenant_id UUID │   │ FK │ tenant_id UUID │
+│    │           NULL │   │    │                │   │    │                │
+│    │    (super_admin)│   │    │                │   │    │                │
+│    │ email     VARCHAR│   │    │ name      VARCHAR│   │    │ action    VARCHAR│
+│    │           UNIQUE │   │    │ description TEXT│   │    │ entity_type VARCHAR│
+│    │    per tenant  │   │    │ status    ENUM  │   │    │ entity_id   UUID │
+│    │ password_hash  │   │    │  ('active',     │   │ FK │ user_id     UUID │
+│    │           VARCHAR│   │    │   'archived')   │   │    │ changes     JSONB│
+│    │ full_name VARCHAR│   │ FK │ created_by UUID │   │    │ ip_address VARCHAR│
+│    │ role      ENUM  │   │    │           →users│   │    │ created_at TIMESTAMP│
+│    │  ('super_admin',│   │    │ created_at     │   └─────────────────────┘
+│    │   'tenant_admin',│   │    │           TIMESTAMP│
+│    │   'user')       │   │    │ updated_at     │
+│    │ is_active BOOLEAN│   │    │           TIMESTAMP│
+│    │ created_at      │   └─────────────────────┘
+│    │           TIMESTAMP│            │
+│    │ updated_at      │            │ 1:N
+│    │           TIMESTAMP│            │
+└─────────────────────┘            │
+         │                          │
+         │                          ▼
+         │                 ┌─────────────────────┐
+         │                 │    TASKS TABLE      │
+         │                 ├─────────────────────┤
+         │                 │ PK │ id        UUID │
+         │                 │ FK │ project_id UUID│
+         │                 │    │                │
+         │                 │    │ title     VARCHAR│
+         │                 │    │ description TEXT│
+         │                 │    │ status    ENUM  │
+         │                 │    │  ('todo',       │
+         │                 │    │   'in_progress',│
+         │                 │    │   'completed')  │
+         │                 │    │ priority  ENUM  │
+         │                 │    │  ('low',        │
+         │                 │    │   'medium',     │
+         │                 │    │   'high')       │
+         │                 │ FK │ assigned_to UUID│
+         │                 │    │           →users│
+         │                 │    │ due_date  DATE  │
+         │                 │    │ created_at      │
+         │                 │    │           TIMESTAMP│
+         │                 │    │ updated_at      │
+         │                 │    │           TIMESTAMP│
+         │                 └─────────────────────┘
+         │                          │
+         └──────────────────────────┘
+                   (assigned_to)
+
+
+RELATIONSHIPS:
+
+1. tenants → users (1:N)
+   - One tenant has many users
+   - tenant_id foreign key in users table
+   - CASCADE on delete (deleting tenant removes all users)
+   - super_admin users have tenant_id = NULL
+
+2. tenants → projects (1:N)
+   - One tenant has many projects
+   - tenant_id foreign key in projects table
+   - CASCADE on delete (deleting tenant removes all projects)
+
+3. tenants → audit_logs (1:N)
+   - One tenant has many audit log entries
+   - tenant_id foreign key in audit_logs table
+   - CASCADE on delete (deleting tenant removes audit history)
+
+4. users → projects (1:N) [created_by]
+   - One user creates many projects
+   - created_by foreign key in projects table
+   - SET NULL on delete (preserve project if creator deleted)
+
+5. projects → tasks (1:N)
+   - One project has many tasks
+   - project_id foreign key in tasks table
+   - CASCADE on delete (deleting project removes all tasks)
+
+6. users → tasks (1:N) [assigned_to]
+   - One user is assigned to many tasks
+   - assigned_to foreign key in tasks table
+   - SET NULL on delete (preserve task if assignee deleted)
+
+7. users → audit_logs (1:N)
+   - One user generates many audit log entries
+   - user_id foreign key in audit_logs table
+   - SET NULL on delete (preserve audit trail)
+
+
+INDEXES:
+
+Primary Keys (automatically indexed):
+- All tables have UUID primary keys
+
+Foreign Key Indexes:
+- users(tenant_id)
+- projects(tenant_id)
+- projects(created_by)
+- tasks(project_id)
+- tasks(assigned_to)
+- audit_logs(tenant_id)
+- audit_logs(user_id)
+
+Unique Constraints:
+- tenants(subdomain)
+- users(tenant_id, email) - email unique per tenant
+
+Composite Indexes:
+- users(tenant_id, role) - for role filtering within tenant
+- projects(tenant_id, status) - for status filtering
+- tasks(project_id, status) - for task filtering
+- tasks(assigned_to, status) - for user's task list
+
+
+ENUMS:
+
+tenant_status:
+- 'active'
+- 'suspended'
+- 'trial'
+
+subscription_plan:
+- 'free' (max_users: 5, max_projects: 3)
+- 'pro' (max_users: 25, max_projects: 15)
+- 'enterprise' (max_users: 100, max_projects: 50)
+
+user_role:
+- 'super_admin' (tenant_id = NULL, global access)
+- 'tenant_admin' (full access within tenant)
+- 'user' (read access + assigned tasks)
+
+project_status:
+- 'active'
+- 'archived'
+
+task_status:
+- 'todo'
+- 'in_progress'
+- 'completed'
+
+task_priority:
+- 'low'
+- 'medium'
+- 'high'
+
+
+CONSTRAINTS & VALIDATION:
+
+1. Tenant Isolation:
+   - Every row (except super_admin users) has tenant_id
+   - Middleware enforces tenant_id matching JWT
+   - Cross-tenant foreign keys are blocked
+
+2. Email Uniqueness:
+   - Unique constraint on (tenant_id, email)
+   - Allows same email across different tenants
+   - Super admin emails globally unique (tenant_id NULL)
+
+3. Plan Limits:
+   - Enforced at service layer before INSERT
+   - max_users and max_projects from subscription_plan
+   - Prevents resource exhaustion
+
+4. Cascade Rules:
+   - Delete tenant → cascade to users, projects, audit_logs
+   - Delete project → cascade to tasks
+   - Delete user → SET NULL on created_by, assigned_to
+
+5. Timestamps:
+   - created_at: automatic on INSERT
+   - updated_at: automatic on UPDATE
+   - Supports audit trails and analytics
+
+
+DATA TYPES:
+
+- UUID: Primary and foreign keys (v4, prevents enumeration)
+- VARCHAR: Text fields with length limits
+- TEXT: Long-form descriptions
+- ENUM: Status and role fields (type safety)
+- BOOLEAN: Binary flags (is_active)
+- INTEGER: Numeric limits (max_users, max_projects)
+- JSONB: Flexible audit log changes (PostgreSQL specific)
+- TIMESTAMP: Date/time with timezone
+- DATE: Due dates (without time)
+
+
+SAMPLE DATA:
+
+Tenant: Demo Company (subdomain: demo, plan: pro)
+├── Users:
+│   ├── admin@demo.com (tenant_admin)
+│   ├── user1@demo.com (user)
+│   └── user2@demo.com (user)
+├── Projects:
+│   ├── Onboarding Portal (active, 4 tasks)
+│   └── Mobile App (active, 4 tasks)
+└── Audit Logs: 20+ entries
+
+Super Admin: superadmin@system.com (tenant_id: NULL)
+```
+
+This ERD captures the complete relational structure ensuring:
+- **Tenant Isolation**: Every entity scoped to tenant
+- **Data Integrity**: Foreign keys with appropriate cascade rules
+- **Performance**: Indexes on frequently queried columns
+- **Security**: Enums for type safety, UUIDs for non-enumerable IDs
+- **Auditability**: Timestamps and audit_logs for compliance

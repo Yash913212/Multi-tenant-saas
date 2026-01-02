@@ -1,0 +1,138 @@
+# System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                           Client Layer                           │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │         React Frontend (Port 3000)                         │ │
+│  │  • React Router for navigation                             │ │
+│  │  • Axios for HTTP requests                                 │ │
+│  │  • JWT token storage (localStorage/sessionStorage)         │ │
+│  │  • Protected Routes & Role-based UI                        │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                             │                                     │
+│                             │ HTTP/JSON                           │
+│                             ▼                                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                         Backend API Layer                         │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │      Express.js API Server (Port 5000)                     │ │
+│  │                                                             │ │
+│  │  ┌──────────────────────────────────────────────────────┐ │ │
+│  │  │  Middleware Stack                                     │ │ │
+│  │  │  • CORS (origin validation)                           │ │ │
+│  │  │  • Helmet (security headers)                          │ │ │
+│  │  │  • Morgan (request logging)                           │ │ │
+│  │  │  • Auth middleware (JWT validation)                   │ │ │
+│  │  │  • RBAC middleware (role checks)                      │ │ │
+│  │  │  • Tenant isolation (tenant_id injection)             │ │ │
+│  │  └──────────────────────────────────────────────────────┘ │ │
+│  │                                                             │ │
+│  │  ┌──────────────────────────────────────────────────────┐ │ │
+│  │  │  Routes                                               │ │ │
+│  │  │  • /api/auth         (register, login)               │ │ │
+│  │  │  • /api/health       (health check)                  │ │ │
+│  │  │  • /api/tenants      (tenant CRUD)                   │ │ │
+│  │  │  • /api/users        (user management)               │ │ │
+│  │  │  • /api/projects     (project CRUD)                  │ │ │
+│  │  │  • /api/projects/:id/tasks (task CRUD)               │ │ │
+│  │  └──────────────────────────────────────────────────────┘ │ │
+│  │                                                             │ │
+│  │  ┌──────────────────────────────────────────────────────┐ │ │
+│  │  │  Services (Business Logic)                            │ │ │
+│  │  │  • tenantService    (plan limit enforcement)         │ │ │
+│  │  │  • userService      (password hashing, validation)   │ │ │
+│  │  │  • projectService   (tenant scoping)                 │ │ │
+│  │  │  • taskService      (assignment validation)          │ │ │
+│  │  │  • auditService     (audit log creation)             │ │ │
+│  │  └──────────────────────────────────────────────────────┘ │ │
+│  │                                                             │ │
+│  │  ┌──────────────────────────────────────────────────────┐ │ │
+│  │  │  Data Access (Knex Query Builder)                     │ │ │
+│  │  │  • Parameterized queries (SQL injection prevention)  │ │ │
+│  │  │  • Transaction support                                │ │ │
+│  │  │  • Migration management                               │ │ │
+│  │  │  • Seed data execution                                │ │ │
+│  │  └──────────────────────────────────────────────────────┘ │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                             │                                     │
+│                             │ SQL                                 │
+│                             ▼                                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        Database Layer                             │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │        PostgreSQL 15 Database (Port 5432)                  │ │
+│  │                                                             │ │
+│  │  Tables:                                                    │ │
+│  │  • tenants (id, name, subdomain, subscription_plan, ...)  │ │
+│  │  • users (id, tenant_id, email, password_hash, role, ...) │ │
+│  │  • projects (id, tenant_id, name, status, created_by, ...)│ │
+│  │  • tasks (id, project_id, title, status, assigned_to, ...)│ │
+│  │  • audit_logs (id, tenant_id, action, entity, user_id)    │ │
+│  │                                                             │ │
+│  │  Indexes:                                                   │ │
+│  │  • tenant_id on all tenant-scoped tables                   │ │
+│  │  • Foreign keys with CASCADE delete                        │ │
+│  │  • Email uniqueness per tenant                             │ │
+│  │                                                             │ │
+│  │  Volume: db_data (persistent storage)                      │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      Docker Orchestration                         │
+│                                                                   │
+│  docker-compose.yml:                                             │
+│  • database service (postgres:15-alpine)                         │
+│  • backend service (Node.js 20, depends on database)             │
+│  • frontend service (Node.js 20, depends on backend)             │
+│                                                                   │
+│  Networking: Default bridge network for service communication    │
+│  Volumes: db_data for PostgreSQL persistence                     │
+│  Health Checks: All services have health check configurations    │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      Security Layers                              │
+│                                                                   │
+│  1. Transport Security (production: HTTPS via reverse proxy)     │
+│  2. Authentication (JWT with 24h expiry)                         │
+│  3. Authorization (RBAC middleware)                              │
+│  4. Tenant Isolation (middleware + database filters)             │
+│  5. Input Validation (service layer checks)                      │
+│  6. SQL Injection Prevention (parameterized queries)             │
+│  7. Password Security (bcrypt hashing)                           │
+│  8. Audit Logging (all critical operations)                      │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      Data Flow Example                            │
+│                                                                   │
+│  1. User logs in via frontend                                    │
+│  2. Frontend sends POST /api/auth/login                          │
+│  3. Backend validates credentials, generates JWT                 │
+│  4. Frontend stores JWT in localStorage                          │
+│  5. User creates project                                         │
+│  6. Frontend sends POST /api/projects with JWT header            │
+│  7. Auth middleware validates JWT, extracts user & tenant_id     │
+│  8. RBAC middleware checks if user is tenant_admin               │
+│  9. Project service checks plan limits                           │
+│ 10. Database insert with tenant_id                               │
+│ 11. Audit log entry created                                      │
+│ 12. Success response returned to frontend                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+This diagram represents the three-tier architecture with:
+- **Frontend**: React SPA with protected routes
+- **Backend**: Express API with layered security
+- **Database**: PostgreSQL with tenant isolation
+
+All communication flows through well-defined interfaces, ensuring separation of concerns and maintainability.
