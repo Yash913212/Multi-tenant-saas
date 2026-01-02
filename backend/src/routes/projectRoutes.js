@@ -1,21 +1,24 @@
-import { Router } from 'express';
-import {
-    createProjectHandler,
-    listProjectsHandler,
-    getProjectHandler,
-    updateProjectHandler,
-    deleteProjectHandler
-} from '../controllers/projectController.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
-import { ROLES } from '../utils/constants.js';
+// const router = require('express').Router();
+// const auth = require('../middleware/authMiddleware');
+// // Import the new deleteProject function
+// const { listProjects, createProject, deleteProject } = require('../controllers/projectController');
 
-const router = Router();
+// router.get('/', auth, listProjects);
+// router.post('/', auth, createProject);
 
-router.use(authenticate);
-router.post('/', requireRole(ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN), createProjectHandler);
-router.get('/', listProjectsHandler);
-router.get('/:id', getProjectHandler);
-router.patch('/:id', requireRole(ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN), updateProjectHandler);
-router.delete('/:id', requireRole(ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN), deleteProjectHandler);
+// // ADD THIS LINE:
+// router.delete('/:id', auth, deleteProject);
 
-export default router;
+// module.exports = router;
+
+
+const router = require('express').Router();
+const auth = require('../middleware/authMiddleware');
+const { listProjects, createProject, updateProject, deleteProject } = require('../controllers/projectController');
+
+router.get('/', auth, listProjects);
+router.post('/', auth, createProject);
+router.put('/:id', auth, updateProject); // <--- Added Update
+router.delete('/:id', auth, deleteProject);
+
+module.exports = router;

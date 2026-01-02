@@ -3,24 +3,39 @@
         "superAdmin": {
             "email": "superadmin@system.com",
             "password": "Admin@123",
-            "note": "Super admin login does not require tenant context"
+            "role": "super_admin",
+            "tenantId": null
         },
-        "tenantAdmin": {
-            "email": "admin@demo.com",
-            "password": "Demo@123",
-            "tenantSubdomain": "demo"
-        },
-        "users": [
-            {
-                "email": "user1@demo.com",
-                "password": "User@123",
-                "tenantSubdomain": "demo"
+        "tenants": [{
+            "name": "Demo Company",
+            "subdomain": "demo",
+            "status": "active",
+            "subscriptionPlan": "free",
+            "admin": {
+                "email": "admin@demo.com",
+                "password": "Demo@123",
+                "role": "tenant_admin"
             },
-            {
-                "email": "user2@demo.com",
-                "password": "User@123",
-                "tenantSubdomain": "demo"
-            }
-        ]
+            "users": [{
+                    "email": "user1@demo.com",
+                    "password": "User@123",
+                    "role": "user"
+                },
+                {
+                    "email": "user2@demo.com",
+                    "password": "User@123",
+                    "role": "user"
+                }
+            ],
+            "projects": [{
+                    "name": "Website Redesign",
+                    "description": "Overhaul of the main company website."
+                },
+                {
+                    "name": "Mobile App Launch",
+                    "description": "iOS and Android release planning."
+                }
+            ]
+        }]
     }
 }

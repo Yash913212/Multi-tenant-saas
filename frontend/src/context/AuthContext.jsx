@@ -1,124 +1,139 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import api, { registerUnauthorizedHandler, setAuthToken } from '../services/api.js';
+// import { createContext, useState, useEffect, useContext } from 'react';
+// import api from '../api/axios';
 
-const AuthContext = createContext();
+// const AuthContext = createContext(null);
+
+// export const AuthProvider = ({ children }) => {
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   // Check if user is logged in when the app starts
+//   useEffect(() => {
+//     const verifyUser = async () => {
+//       const token = localStorage.getItem('token');
+//       if (token) {
+//         try {
+//           // Call API to get current user details
+//           const { data } = await api.get('/auth/me'); 
+//           setUser(data.data);
+//         } catch (error) {
+//           console.error("Auth verification failed", error);
+//           localStorage.removeItem('token');
+//         }
+//       }
+//       setLoading(false);
+//     };
+//     verifyUser();
+//   }, []);
+
+//   // Login Function
+//   const login = async (email, password, subdomain) => {
+//     const { data } = await api.post('/auth/login', { 
+//       email, 
+//       password, 
+//       tenantSubdomain: subdomain // Match the backend expectation
+//     });
+    
+//     // Save token and user state
+//     localStorage.setItem('token', data.data.token);
+//     setUser(data.data.user);
+//     return data;
+//   };
+
+//   // Logout Function
+//   const logout = () => {
+//     localStorage.removeItem('token');
+//     setUser(null);
+//     window.location.href = '/login';
+//   };
+
+//   return (
+//     <AuthContext.Provider value={{ user, login, logout, loading }}>
+//       {!loading && children}
+//     </AuthContext.Provider>
+//   );
+// };
+
+// // Custom hook to use auth easily
+// export const useAuth = () => useContext(AuthContext);
+
+
+
+import { createContext, useState, useEffect, useContext } from 'react';
+import api from '../api/axios';
+
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const getStored = (key) => {
-    const fromLocal = localStorage.getItem(key);
-    if (fromLocal) return fromLocal;
-    const fromSession = sessionStorage.getItem(key);
-    return fromSession || null;
-  };
-
-  const [token, setToken] = useState(() => getStored('token'));
-  const [user, setUser] = useState(() => {
-    const raw = getStored('user');
-    return raw ? JSON.parse(raw) : null;
-  });
-  const [expiresAt, setExpiresAt] = useState(() => {
-    const raw = getStored('expiresAt');
-    return raw ? Number(raw) : null;
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const isExpired = useMemo(() => (expiresAt ? Date.now() > expiresAt : false), [expiresAt]);
-
-  const persistSession = (jwt, userData, expiration, { remember } = { remember: true }) => {
-    setToken(jwt);
-    setUser(userData || null);
-    setExpiresAt(expiration || null);
-    const storage = remember ? localStorage : sessionStorage;
-    if (jwt) storage.setItem('token', jwt);
-    if (userData) storage.setItem('user', JSON.stringify(userData));
-    if (expiration) storage.setItem('expiresAt', String(expiration));
+  // Helper: Fix Data Format (Snake_case -> CamelCase)
+  const normalizeUser = (userData) => {
+    if (!userData) return null;
+    return {
+      ...userData,
+      id: userData.id,
+      email: userData.email,
+      // Check both formats
+      fullName: userData.full_name || userData.fullName || userData.name || 'User',
+      tenantId: userData.tenant_id || userData.tenantId,
+      role: userData.role
+    };
   };
 
-  const clearSession = () => {
-    setToken(null);
-    setUser(null);
-    setExpiresAt(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('expiresAt');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('expiresAt');
-  };
-
-  const logout = async(silent = false) => {
-    try {
-      if (token && !silent) await api.post('/auth/logout');
-    } catch (_err) {
-      // ignore logout errors
-    } finally {
-      clearSession();
-    }
-  };
-
-  const refreshUser = async() => {
-    if (!token || isExpired) return logout(true);
-    try {
-      const { data } = await api.get('/auth/me');
-      setUser(data.data);
-      const storage = getStored('token') === localStorage.getItem('token') ? localStorage : sessionStorage;
-      storage.setItem('user', JSON.stringify(data.data));
-    } catch (err) {
-      await logout(true);
-      throw err;
-    }
-  };
-
-  const login = (jwt, userData, expiresInSeconds, { remember = true } = {}) => {
-    const expiration = expiresInSeconds ? Date.now() + Number(expiresInSeconds) * 1000 : null;
-    persistSession(jwt, userData, expiration, { remember });
-    setAuthToken(jwt);
-  };
-
+  // 1. Check User on Load
   useEffect(() => {
-    registerUnauthorizedHandler(() => logout(true));
-  }, []);
-
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
-
-  useEffect(() => {
-    const initialize = async() => {
-      if (token && !isExpired) {
+    const verifyUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
         try {
-          await refreshUser();
-        } catch {
-          // refreshUser handles logout on failure
+          const { data } = await api.get('/auth/me'); 
+          // The API might return { data: user } or just user
+          const rawUser = data.data || data;
+          setUser(normalizeUser(rawUser));
+        } catch (error) {
+          console.error("Auth verification failed", error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
         }
-      } else if (token && isExpired) {
-        await logout(true);
       }
       setLoading(false);
     };
-    initialize();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    verifyUser();
+  }, []);
 
-  useEffect(() => {
-    if (isExpired && token) {
-      logout(true);
-    }
-  }, [isExpired, token]);
+  // 2. Login Function
+  const login = async (email, password, subdomain) => {
+    const { data } = await api.post('/auth/login', { 
+      email, 
+      password, 
+      tenantSubdomain: subdomain 
+    });
+    
+    // Normalize the user data immediately
+    const fixedUser = normalizeUser(data.data.user);
 
-  const value = useMemo(() => ({
-    token,
-    user,
-    expiresAt,
-    isExpired,
-    loading,
-    login,
-    logout,
-    refreshUser
-  }), [token, user, expiresAt, isExpired, loading]);
+    localStorage.setItem('token', data.data.token);
+    // Save the FIXED user to local storage so other pages read it correctly
+    localStorage.setItem('user', JSON.stringify(fixedUser));
+    
+    setUser(fixedUser);
+    return data;
+  };
+
+  // 3. Logout Function
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    window.location.href = '/login';
+  };
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

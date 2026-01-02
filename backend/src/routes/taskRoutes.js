@@ -1,19 +1,26 @@
-import { Router } from 'express';
-import {
-    createTaskHandler,
-    listTasksHandler,
-    updateTaskHandler,
-    deleteTaskHandler
-} from '../controllers/taskController.js';
-import { authenticate } from '../middleware/auth.js';
+// const express = require('express');
+// const router = express.Router();
+// const auth = require('../middleware/authMiddleware');
+// const { listTasks, createTask } = require('../controllers/taskController');
 
-const router = Router({ mergeParams: true });
+// router.get('/', auth, listTasks);
+// router.post('/', auth, createTask);
 
-router.use(authenticate);
-router.post('/', createTaskHandler);
-router.get('/', listTasksHandler);
-router.put('/:id', updateTaskHandler);
-router.patch('/:id', updateTaskHandler);
-router.delete('/:id', deleteTaskHandler);
+// module.exports = router;
 
-export default router;
+
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/authMiddleware');
+const { listTasks, createTask, updateTaskStatus, updateTask, deleteTask } = require('../controllers/taskController');
+
+// Standard Routes
+router.get('/', auth, listTasks);
+router.post('/', auth, createTask);
+
+// New Modification Routes
+router.patch('/:id/status', auth, updateTaskStatus); // API 18
+router.put('/:id', auth, updateTask);                // API 19
+router.delete('/:id', auth, deleteTask);             // Delete
+
+module.exports = router;

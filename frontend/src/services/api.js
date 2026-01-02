@@ -1,10 +1,11 @@
-// Axios client for API calls
+﻿// Axios client for API calls
 import axios from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL ||
-        import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api',
-    withCredentials: false
+        import.meta.env.REACT_APP_API_URL ||
+        '/api',
+    withCredentials: false,
 });
 
 let unauthorizedHandler = null;
@@ -12,7 +13,7 @@ let unauthorizedHandler = null;
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response ? .status === 401 && unauthorizedHandler) {
+        if (error.response && error.response.status === 401 && unauthorizedHandler) {
             unauthorizedHandler();
         }
         return Promise.reject(error);

@@ -1,82 +1,39 @@
-import React from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext.jsx';
-import RegistrationPage from './pages/RegistrationPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import ProjectsPage from './pages/ProjectsPage.jsx';
-import ProjectDetailsPage from './pages/ProjectDetailsPage.jsx';
-import UsersPage from './pages/UsersPage.jsx';
-import TasksPage from './pages/TasksPage.jsx';
-import TenantsPage from './pages/TenantsPage.jsx';
-import Layout from './components/Layout.jsx';
-import Spinner from './components/Spinner.jsx';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import Login from './pages/auth/Login';
+import Register from './pages/Register';
+import DashboardLayout from './layouts/DashboardLayout';
+import Dashboard from './pages/dashboard/Dashboard';
+import ProjectList from './pages/projects/ProjectList';
+import UserList from './pages/users/UserList';
+import TenantList from './pages/tenants/TenantList';
+import ProjectDetails from './pages/projects/ProjectDetails';
 
-const ProtectedRoute = ({ children }) => {
-  const { token, isExpired, loading } = useAuth();
-  if (loading) return <div className="container"><Spinner label="Checking your session..." /></div>;
-  if (!token || isExpired) return <Navigate to="/login" replace />;
-  return children;
-};
-
-const App = () => {
+function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/register" element={<RegistrationPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/projects"
-          element={
-            <ProtectedRoute>
-              <ProjectsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/projects/:projectId"
-          element={
-            <ProtectedRoute>
-              <ProjectDetailsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute>
-              <UsersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <TasksPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tenants"
-          element={
-            <ProtectedRoute>
-              <TenantsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Layout>
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Protected Routes - All inside DashboardLayout */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projects" element={<ProjectList />} />
+            <Route path="/users" element={<UserList />} />
+            <Route path="/tenants" element={<TenantList />} />
+            <Route path="/projects/:id" element={<ProjectDetails />} />
+          </Route>
+
+          {/* Default Redirect */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
-};
+}
 
 export default App;

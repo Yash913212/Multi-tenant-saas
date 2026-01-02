@@ -1,18 +1,32 @@
-import { Router } from 'express';
-import { listTenantsHandler, getTenantHandler, updateTenantHandler } from '../controllers/tenantController.js';
-import { authenticate } from '../middleware/auth.js';
-import { ROLES } from '../utils/constants.js';
+const express = require('express');
+const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
+const tenantGuard = require('../middleware/tenantMiddleware');
+const { listTenants, createTenant, getTenant, updateTenant, deleteTenant } = require('../controllers/tenantController'); // Import deleteTenant
+const { listUsers, createUser, updateUser, deleteUser } = require('../controllers/userController');
 
-const router = Router();
+// --- TENANT ROUTES ---
+router.get('/', authMiddleware, allowRoles('super_admin'), listTenants);
+router.post('/', authMiddleware, allowRoles('super_admin'), createTenant);
+router.get('/:tenantId', authMiddleware, tenantGuard('tenantId'), getTenant);
+router.put('/:tenantId', authMiddleware, allowRoles('super_admin', 'tenant_admin'), tenantGuard('tenantId'), updateTenant);
+router.delete('/:tenantId', authMiddleware, allowRoles('super_admin'), deleteTenant);
 
-router.use(authenticate);
+// --- USER MANAGEMENT ROUTES ---
 
-router.get('/', (req, res, next) => {
-    if (req.user.role !== ROLES.SUPER_ADMIN) return res.status(403).json({ success: false, message: 'Forbidden' });
-    next();
-}, listTenantsHandler);
+// 1. List Users
+router.get('/:tenantId/users', authMiddleware, tenantGuard('tenantId'), listUsers);
 
-router.get('/:tenantId', getTenantHandler);
-router.put('/:tenantId', updateTenantHandler);
+// 2. Add User
+router.post('/:tenantId/users', authMiddleware, allowRoles('super_admin', 'tenant_admin'), tenantGuard('tenantId'), createUser);
 
-export default router;
+// 3. Update User (New)
+// URL: /api/tenants/:tenantId/users/:userId
+router.put('/:tenantId/users/:userId', authMiddleware, allowRoles('super_admin', 'tenant_admin'), tenantGuard('tenantId'), updateUser);
+
+// 4. Delete User (New)
+// URL: /api/tenants/:tenantId/users/:userId
+router.delete('/:tenantId/users/:userId', authMiddleware, allowRoles('super_admin', 'tenant_admin'), tenantGuard('tenantId'), deleteUser);
+
+module.exports = router;
