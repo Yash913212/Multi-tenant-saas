@@ -4,16 +4,35 @@ import api from '../services/api.js';
 
 const RegistrationPage = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ tenantName: '', subdomain: '', adminFullName: '', adminEmail: '', adminPassword: '' });
+  const [form, setForm] = useState({
+    tenantName: '',
+    subdomain: '',
+    adminFullName: '',
+    adminEmail: '',
+    adminPassword: '',
+    confirmPassword: '',
+    acceptTerms: false
+  });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.tenantName || !form.subdomain || !form.adminEmail || !form.adminPassword) {
+    if (!form.tenantName || !form.subdomain || !form.adminEmail || !form.adminPassword || !form.confirmPassword) {
       return setMessage('Please fill in all required fields');
+    }
+    if (form.adminPassword !== form.confirmPassword) {
+      return setMessage('Passwords do not match');
+    }
+    if (!form.acceptTerms) {
+      return setMessage('You must accept the Terms & Conditions');
     }
     setLoading(true);
     setMessage('');
@@ -50,11 +69,44 @@ const RegistrationPage = () => {
             <span>Admin Email</span>
             <input name="adminEmail" placeholder="jane@acme.com" type="email" value={form.adminEmail} onChange={handleChange} required />
           </label>
-          <label>
+          <label className="password-field">
             <span>Admin Password</span>
-            <input name="adminPassword" placeholder="••••••••" type="password" value={form.adminPassword} onChange={handleChange} required />
+            <div className="input-with-action">
+              <input
+                name="adminPassword"
+                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                value={form.adminPassword}
+                onChange={handleChange}
+                required
+              />
+              <button type="button" className="ghost" onClick={() => setShowPassword((v) => !v)}>
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </label>
+          <label className="password-field">
+            <span>Confirm Password</span>
+            <div className="input-with-action">
+              <input
+                name="confirmPassword"
+                placeholder="••••••••"
+                type={showConfirm ? 'text' : 'password'}
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <button type="button" className="ghost" onClick={() => setShowConfirm((v) => !v)}>
+                {showConfirm ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </label>
         </form>
+        <div className="muted subdomain-preview">Will be available at: <strong>{form.subdomain || 'your-subdomain'}.yourapp.com</strong></div>
+        <label className="checkbox-row">
+          <input type="checkbox" name="acceptTerms" checked={form.acceptTerms} onChange={handleChange} />
+          <span>I agree to the Terms & Conditions</span>
+        </label>
         {message && <div className="alert alert-info">{message}</div>}
         <button disabled={loading} className="primary" onClick={handleSubmit}>{loading ? 'Creating...' : 'Register Tenant'}</button>
         <p className="muted">Already registered? <Link to="/login">Login</Link></p>
