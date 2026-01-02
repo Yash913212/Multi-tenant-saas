@@ -55,7 +55,7 @@ const Register = () => {
       justifyContent: 'center', 
       alignItems: 'center', 
       height: '100vh', 
-      backgroundColor: '#f4f6f8' 
+      backgroundColor: '#f9f9f9' 
     }}>
       <div style={{ 
         width: '400px', 
@@ -93,7 +93,7 @@ const Register = () => {
               onChange={onChange}
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
             />
-            <small style={{ color: '#666' }}>URL: http://{formData.subdomain || 'your-subdomain'}.saas.com</small>
+            <small style={{ color: '#666' }}>URL: http://{formData.subdomain || 'your-subdomain'}.tasknest.com</small>
           </div>
 
           <div style={{ marginBottom: '15px' }}>
@@ -140,7 +140,7 @@ const Register = () => {
             style={{ 
               width: '100%', 
               padding: '10px', 
-              backgroundColor: '#007bff', 
+              backgroundImage: 'linear-gradient(90deg, #646cff, #535bf2, #f97316)',
               color: 'white', 
               border: 'none', 
               borderRadius: '4px', 
@@ -153,7 +153,7 @@ const Register = () => {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '15px' }}>
-          Already have an account? <Link to="/login" style={{ color: '#007bff' }}>Login here</Link>
+          Already have an account? <Link to="/login" style={{ color: '#646cff' }}>Login here</Link>
         </p>
       </div>
     </div>

@@ -2,7 +2,7 @@ const Input = ({ label, type = "text", name, value, onChange, placeholder, requi
   return (
     <div className="mb-4">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-vite-muted mb-1">
           {label}
         </label>
       )}
@@ -13,7 +13,7 @@ const Input = ({ label, type = "text", name, value, onChange, placeholder, requi
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full px-3 py-2 bg-white border border-vite-border rounded-md text-vite-text placeholder:text-vite-muted focus:outline-none focus:ring-2 focus:ring-[var(--vite-primary)] focus:border-[var(--vite-primary)]"
       />
     </div>
   );

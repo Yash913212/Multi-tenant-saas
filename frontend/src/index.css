@@ -6,14 +6,17 @@
      :root {
         font-family: 'Inter', 'Inter var', 'Segoe UI', system-ui, -apple-system, sans-serif;
         color-scheme: light;
-        --vite-bg: #f8fafc;
+        --vite-bg: #f9f9f9;
         --vite-card: #ffffff;
         --vite-border: #e5e7eb;
-        --vite-text: #0f172a;
-        --vite-muted: #6b7280;
+        --vite-text: #213547;
+        --vite-muted: #4b5563;
         --vite-primary: #646cff;
-        --vite-secondary: #747bff;
+        /* signature purple */
+        --vite-secondary: #f97316;
+        /* signature amber/orange */
         --vite-hover: #535bf2;
+        /* deeper purple for hover */
     }
     body {
         min-height: 100vh;
@@ -21,32 +24,13 @@
         color: var(--vite-text);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        transition: background-color 200ms, color 200ms;
+        transition: background-color 200ms ease, color 200ms ease;
+        overflow-x: hidden;
     }
-    /* Dark mode foundation matching the Vite-inspired palette */
-    .dark {
-        color-scheme: dark;
-        --vite-bg: #0c1127;
-        --vite-card: #11182f;
-        --vite-border: #1f2945;
-        --vite-text: #e5e7ef;
-        --vite-muted: #94a3b8;
-        --vite-primary: #646cff;
-        --vite-secondary: #747bff;
-        --vite-hover: #535bf2;
-    }
-    .dark body {
-        background-color: var(--vite-bg);
-        color: var(--vite-text);
-    }
-    /* Subtle selection styling */
      ::selection {
-        background: rgba(100, 108, 255, 0.18);
+        background: rgba(255, 226, 8, 0.18);
     }
 }
-
-
-/* Override Vite-themed utility colors to respect light/dark CSS variables */
 
 @layer utilities {
     .bg-vite-dark {

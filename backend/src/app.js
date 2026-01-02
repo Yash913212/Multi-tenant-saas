@@ -10,6 +10,7 @@ const tenantRoutes = require('./routes/tenantRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 dotenv.config();
 
@@ -26,22 +27,23 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // health
-app.get('/api/health', async (req, res) => {
-  try {
-    res.json({ status: 'ok', database: 'connected' });
-  } catch {
-    res.status(500).json({ status: 'error', database: 'disconnected' });
-  }
+app.get('/api/health', async(req, res) => {
+    try {
+        res.json({ status: 'ok', database: 'connected' });
+    } catch {
+        res.status(500).json({ status: 'error', database: 'disconnected' });
+    }
 });
 
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
-  await runMigrations();
-  await runSeeds();
-  app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
+    await runMigrations();
+    await runSeeds();
+    app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
 }
 
 startServer();

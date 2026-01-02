@@ -106,11 +106,13 @@ export const AuthProvider = ({ children }) => {
 
   // 2. Login Function
   const login = async (email, password, subdomain) => {
-    const { data } = await api.post('/auth/login', { 
-      email, 
-      password, 
-      tenantSubdomain: subdomain 
-    });
+    const body = { email, password };
+    const cleanedSubdomain = (subdomain || '').trim();
+    if (cleanedSubdomain) {
+      body.tenantSubdomain = cleanedSubdomain;
+    }
+
+    const { data } = await api.post('/auth/login', body);
     
     // Normalize the user data immediately
     const fixedUser = normalizeUser(data.data.user);

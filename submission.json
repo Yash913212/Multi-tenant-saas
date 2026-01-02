@@ -28,12 +28,28 @@
                 }
             ],
             "projects": [{
-                    "name": "Website Redesign",
-                    "description": "Overhaul of the main company website."
+                    "name": "TaskNest Launch",
+                    "description": "Core platform launch and onboarding."
                 },
                 {
-                    "name": "Mobile App Launch",
-                    "description": "iOS and Android release planning."
+                    "name": "Analytics Revamp",
+                    "description": "Upgrade reporting and dashboards."
+                },
+                {
+                    "name": "Customer Onboarding",
+                    "description": "Improve trial-to-paid funnel and playbooks."
+                },
+                {
+                    "name": "Marketing Site Refresh",
+                    "description": "New homepage, pricing, and case studies."
+                },
+                {
+                    "name": "Data Warehouse Migration",
+                    "description": "Move analytics stack to the new warehouse."
+                },
+                {
+                    "name": "AI Assistant Rollout",
+                    "description": "Pilot and roll out AI task assistant to teams."
                 }
             ]
         }]

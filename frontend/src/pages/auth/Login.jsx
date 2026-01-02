@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import ThemeToggle from '../../components/ThemeToggle';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,52 +32,47 @@ const Login = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-vite-dark relative overflow-hidden'>
+    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-[#f9f9f9] to-[#eef2ff] relative overflow-hidden'>
       {/* Background Glow Effects */}
-      <div className='absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none' />
-      <div className='absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none' />
+      <div className='absolute top-[-20%] left-[-10%] w-[520px] h-[520px] bg-[#646cff]/15 rounded-full blur-[120px] pointer-events-none' />
+      <div className='absolute bottom-[-20%] right-[-10%] w-[520px] h-[520px] bg-[#f97316]/12 rounded-full blur-[120px] pointer-events-none' />
 
-      <div className='absolute top-4 right-4 z-10'>
-        <ThemeToggle />
-      </div>
-
-      <div className='max-w-md w-full bg-vite-card p-8 rounded-2xl shadow-2xl border border-vite-border relative z-10 backdrop-blur-sm'>
+      <div className='max-w-md w-full bg-vite-card p-8 rounded-2xl shadow-xl border border-vite-border relative z-10 backdrop-blur-sm'>
         <div className='text-center mb-8'>
-          <h1 className='text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#41d1ff] to-[#bd34fe]'>
-            Vite SaaS
+          <h1 className='text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#646cff] via-[#535bf2] to-[#f97316]'>
+            TaskNest
           </h1>
           <p className='text-vite-muted'>Sign in to your workspace</p>
         </div>
         
         {error && (
-          <div className='bg-red-900/20 text-red-400 p-3 rounded-lg mb-6 text-sm border border-red-900/50 flex items-center'>
+          <div className='bg-red-50 text-red-700 p-3 rounded-lg mb-6 text-sm border border-red-200 flex items-center'>
             <span className='mr-2'></span> {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className='space-y-5'>
           <div className='group'>
-            <label className='block text-sm font-medium text-vite-muted mb-1.5 group-focus-within:text-vite-primary transition-colors'>
-              Tenant Subdomain
+            <label className='block text-sm font-medium text-vite-text mb-1.5 group-focus-within:text-vite-primary transition-colors'>
+              Tenant Subdomain <span className='text-vite-muted'>(optional)</span>
             </label>
             <input
               type='text'
               placeholder='e.g. acme'
-              className='w-full px-4 py-3 bg-[#1a1a1a] border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-white placeholder-gray-600 transition-all'
+              className='w-full px-4 py-3 bg-white border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-vite-text placeholder-gray-400 transition-all'
               value={formData.tenantSubdomain}
               onChange={(e) => setFormData({...formData, tenantSubdomain: e.target.value})}
-              required
             />
           </div>
 
           <div className='group'>
-            <label className='block text-sm font-medium text-vite-muted mb-1.5 group-focus-within:text-vite-primary transition-colors'>
+            <label className='block text-sm font-medium text-vite-text mb-1.5 group-focus-within:text-vite-primary transition-colors'>
               Email Address
             </label>
             <input
               type='email'
               placeholder='you@example.com'
-              className='w-full px-4 py-3 bg-[#1a1a1a] border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-white placeholder-gray-600 transition-all'
+              className='w-full px-4 py-3 bg-white border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-vite-text placeholder-gray-400 transition-all'
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
@@ -86,13 +80,13 @@ const Login = () => {
           </div>
 
           <div className='group'>
-            <label className='block text-sm font-medium text-vite-muted mb-1.5 group-focus-within:text-vite-primary transition-colors'>
+            <label className='block text-sm font-medium text-vite-text mb-1.5 group-focus-within:text-vite-primary transition-colors'>
               Password
             </label>
             <input
               type='password'
               placeholder=''
-              className='w-full px-4 py-3 bg-[#1a1a1a] border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-white placeholder-gray-600 transition-all'
+              className='w-full px-4 py-3 bg-white border border-vite-border rounded-lg focus:outline-none focus:border-vite-primary focus:ring-1 focus:ring-vite-primary text-vite-text placeholder-gray-400 transition-all'
               value={formData.password}
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               required
@@ -102,7 +96,7 @@ const Login = () => {
           <button
             type='submit'
             disabled={loading}
-            className='w-full bg-vite-primary hover:bg-vite-hover text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vite-primary focus:ring-offset-vite-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-[0.98]'
+            className='w-full bg-gradient-to-r from-[#646cff] via-[#535bf2] to-[#f97316] hover:brightness-110 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#646cff] focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-[0.98]'
           >
             {loading ? (
               <span className='flex items-center justify-center'>

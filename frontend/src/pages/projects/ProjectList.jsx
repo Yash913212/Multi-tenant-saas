@@ -149,7 +149,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Folder, Trash2 } from 'lucide-react'; // Fixed imports
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -160,6 +160,7 @@ const ProjectList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Form State
   const [newProject, setNewProject] = useState({ name: '', description: '' });
@@ -169,13 +170,24 @@ const ProjectList = () => {
     const fetchProjects = async () => {
       try {
         const res = await api.get('/projects');
-        setProjects(res.data.data || []); 
+        const payload = res.data?.data;
+        const list = Array.isArray(payload?.projects) ? payload.projects : Array.isArray(payload) ? payload : [];
+        setProjects(list);
       } catch (error) {
         console.error("Failed to fetch projects", error);
+        setProjects([]);
       }
     };
     fetchProjects();
   }, []);
+
+  // Open create modal when navigated with state flag
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      setIsModalOpen(true);
+      navigate('.', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   // 2. Handle Create Project
   const handleCreate = async (e) => {
@@ -209,10 +221,10 @@ const ProjectList = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Projects</h2>
+        <h2 className="text-2xl font-bold text-vite-text">Projects</h2>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          className="flex items-center bg-gradient-to-r from-[#646cff] via-[#535bf2] to-[#f97316] text-white px-4 py-2 rounded-md hover:shadow-md transition-all"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Project
@@ -221,21 +233,23 @@ const ProjectList = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.length === 0 ? (
-          <p className="text-gray-500 col-span-3 text-center py-10">No projects found.</p>
+          <p className="text-vite-muted col-span-3 text-center py-10">No projects found.</p>
         ) : (
           projects.map((project) => (
             <div 
               key={project.id} 
               onClick={() => navigate(`/projects/${project.id}`)}
-              className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-6 group cursor-pointer"
+              className="block bg-vite-card rounded-lg border border-vite-border hover:border-[var(--vite-primary)]/50 transition shadow-sm hover:shadow-lg p-6 group cursor-pointer hover:-translate-y-1"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                  <div className="p-2 bg-[var(--vite-secondary)]/15 rounded-lg text-[var(--vite-secondary)] group-hover:bg-[var(--vite-secondary)]/25 transition-colors">
                     <Folder className="w-6 h-6" />
                   </div>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                    project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    project.status === 'active'
+                      ? 'bg-[var(--vite-primary)]/15 text-[var(--vite-primary)]'
+                      : 'bg-vite-border text-vite-muted'
                   }`}>
                     {project.status || 'Active'}
                   </span>
@@ -244,18 +258,18 @@ const ProjectList = () => {
                 {/* DELETE BUTTON */}
                 <button 
                   onClick={(e) => handleDelete(e, project.id)}
-                  className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                  className="text-vite-muted hover:text-red-400 p-1 rounded-full hover:bg-red-500/10 transition-colors"
                   title="Delete Project"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">{project.name}</h3>
-              <p className="text-sm text-gray-500 mb-4 line-clamp-2">{project.description}</p>
+              <h3 className="text-lg font-semibold text-vite-text mb-2">{project.name}</h3>
+              <p className="text-sm text-vite-muted mb-4 line-clamp-2">{project.description}</p>
               
               {project.tenant_name && (
-                <p className="text-xs text-purple-600 font-semibold mt-2">Tenant: {project.tenant_name}</p>
+                <p className="text-xs text-[var(--vite-secondary)] font-semibold mt-2">Tenant: {project.tenant_name}</p>
               )}
             </div>
           ))
@@ -276,9 +290,9 @@ const ProjectList = () => {
             placeholder="e.g. Website Launch"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-vite-muted mb-1">Description</label>
             <textarea 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white border border-vite-border rounded-md text-vite-text placeholder:text-vite-muted focus:outline-none focus:ring-2 focus:ring-[var(--vite-primary)] focus:border-[var(--vite-primary)]"
               rows="3"
               value={newProject.description}
               onChange={(e) => setNewProject({...newProject, description: e.target.value})}

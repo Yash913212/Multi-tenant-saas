@@ -1,5 +1,154 @@
 # Multi-Tenant SaaS Platform
 
+A multi-tenant project & task management SaaS with tenant isolation, RBAC, subscription limits, audit logging, and full Docker orchestration.
+
+## 🎯 Features
+- Tenant isolation enforced via middleware
+- JWT auth with roles: `super_admin`, `tenant_admin`, `user`
+- Plan limits (Free/Pro/Enterprise) for users/projects
+- Projects & tasks CRUD with status/assignment
+- Audit logging with user/tenant context
+- One-command Docker stack (DB + API + Frontend)
+- React + Vite SPA with protected, role-aware routes and theme toggle
+
+## 🏗️ Tech Stack
+- **Backend**: Node.js 20, Express, PostgreSQL 15, SQL migrations (via knex runner)
+- **Frontend**: React 18, Vite 5, React Router 6, Axios
+- **Infra**: Docker Compose (Postgres Alpine, Node Alpine)
+
+## 🚀 Quick Start (Docker)
+### Prerequisites
+- Docker 24+ and Docker Compose
+- Git
+
+### Steps
+1) Clone
+```bash
+git clone https://github.com/Yash913212/Multi-tenant-saas.git
+cd Multi-tenant-sass-platform
+```
+
+2) Launch stack
+```bash
+docker-compose up -d
+```
+This starts Postgres (5432), runs SQL migrations & seeds, starts backend (5000) and frontend (3000).
+
+3) Verify
+```bash
+docker-compose ps
+curl http://localhost:5000/api/health
+```
+
+4) Access
+- Frontend: http://localhost:3000
+- API: http://localhost:5000/api
+
+### Test Credentials (from `submission.json`)
+- Super Admin: `superadmin@system.com` / `Admin@123`
+- Demo Tenant Admin: `admin@demo.com` / `Demo@123` (subdomain `demo`)
+- Demo Users: `user1@demo.com` / `User@123`, `user2@demo.com` / `User@123`
+
+### Stop / Clean
+```bash
+docker-compose down          # stop
+docker-compose down -v       # stop + drop volumes/data
+```
+
+## 🧭 Project Structure (condensed)
+```
+Multi-tenant-sass-platform/
+├── backend/
+│   ├── src/ (controllers, middleware, routes, config, utils)
+│   ├── migrations/*.sql     # SQL migrations
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/
+│   ├── src/ (pages, layouts, components, context, services)
+│   ├── tailwind.config.js   # Vite palette tokens
+│   ├── Dockerfile
+│   └── package.json
+├── docs/ (api, architecture, PRD, research, diagrams)
+├── docker-compose.yml
+├── submission.json          # test credentials
+└── README.md
+```
+
+## 🔗 API (summary)
+- `GET /api/health`
+- `POST /api/auth/login`
+- `POST /api/auth/register-tenant`
+- Tenants (super_admin): list / get / update
+- Users: CRUD + `GET /api/tenants/:id/users`
+- Projects: CRUD
+- Tasks: CRUD per project
+See [docs/api.md](docs/api.md) for full request/response details.
+
+## 🔒 Security
+- bcrypt password hashing
+- JWT auth (24h expiry)
+- Parameterized DB queries
+- CORS restricted to frontend origin
+- Tenant isolation middleware
+- Audit logging with user/tenant context
+- Role-based access control
+
+## 🛠️ Local Development (no Docker)
+Backend
+```bash
+cd backend
+npm install
+npm run dev
+npm run migrate   # run SQL migrations
+npm run seed      # seed demo data
+```
+Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Database
+- PostgreSQL 15+; set `DATABASE_URL` in `.env`.
+
+## 🧪 Testing (manual/API)
+1) `docker-compose up -d`
+2) Open http://localhost:3000 and login with seed users
+3) Create another tenant to verify isolation; compare tenant_admin vs user UI
+
+API quick checks:
+```bash
+curl http://localhost:5000/api/health
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@demo.com","password":"Demo@123","subdomain":"demo"}'
+```
+
+## 🎬 Demo Video
+Record a short walkthrough (Docker up, login, tenant isolation, project/task flow, RBAC UI) and add the link here when available.
+
+## 🚦 Environment
+Key env vars (see `.env`):
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `PORT` (default 5000)
+- `FRONTEND_URL` (default http://localhost:3000)
+- `VITE_API_BASE_URL` (frontend)
+
+## 🐛 Troubleshooting
+- Logs: `docker-compose logs backend|database|frontend`
+- Restart: `docker-compose restart`
+- Migrations inside backend container: `docker-compose exec backend sh` then `npm run migrate`
+- Port conflicts: adjust ports in `docker-compose.yml`
+
+## 📝 License
+Educational / evaluation use.
+
+## 📧 Contact
+For questions, open an issue or refer to the docs.
+# Multi-Tenant SaaS Platform
+
 A production-ready multi-tenant project and task management SaaS platform with complete tenant isolation, role-based access control, subscription plan limits, audit logging, and comprehensive Dockerization.
 
 ## 🎯 Features
