@@ -1,502 +1,125 @@
 # Multi-Tenant SaaS Platform
 
-A multi-tenant project & task management SaaS with tenant isolation, RBAC, subscription limits, audit logging, and full Docker orchestration.
+A friendlier guide to a production-style multi-tenant project & task manager. You get tenant isolation, RBAC, subscription limits, audit logs, and a one-command Docker stack. React + Vite on the front; Node + Postgres on the back.
 
-## 🎯 Features
-- Tenant isolation enforced via middleware
-- JWT auth with roles: `super_admin`, `tenant_admin`, `user`
-- Plan limits (Free/Pro/Enterprise) for users/projects
-- Projects & tasks CRUD with status/assignment
-- Audit logging with user/tenant context
-- One-command Docker stack (DB + API + Frontend)
-- React + Vite SPA with protected, role-aware routes and theme toggle
+## Why you might care
+- True tenant isolation and role-based access (`super_admin`, `tenant_admin`, `user`).
+- Plan limits (Free / Pro / Enterprise) enforced before creating users or projects.
+- Projects and tasks with status/assignment, plus audit trails for every important action.
+- Docker Compose spins up database, backend, frontend, migrations, and seeds in one go.
 
-## 🏗️ Tech Stack
-- **Backend**: Node.js 20, Express, PostgreSQL 15, SQL migrations (via knex runner)
-- **Frontend**: React 18, Vite 5, React Router 6, Axios
-- **Infra**: Docker Compose (Postgres Alpine, Node Alpine)
+## What’s inside (tech)
+- **Backend:** Node 20, Express, PostgreSQL 15, raw SQL migrations, audit logging.
+- **Frontend:** React 18, Vite 5, React Router 6, Axios, theme toggle.
+- **Infra:** Docker Compose (Postgres Alpine, Node Alpine), ready for local or demo use.
 
-## 🚀 Quick Start (Docker)
-### Prerequisites
-- Docker 24+ and Docker Compose
-- Git
+## Quick start (Docker)
+Prereqs: Docker 24+, Docker Compose, Git.
 
-### Steps
-1) Clone
+Clone and run:
 ```bash
 git clone https://github.com/Yash913212/Multi-tenant-saas.git
 cd Multi-tenant-sass-platform
-```
-
-2) Launch stack
-```bash
 docker-compose up -d
 ```
-This starts Postgres (5432), runs SQL migrations & seeds, starts backend (5000) and frontend (3000).
 
-3) Verify
+What that does:
+- Boots Postgres on 5432
+- Runs migrations & seeds
+- Starts backend on 5000
+- Starts frontend on 3000
+
+Check it’s healthy:
 ```bash
 docker-compose ps
 curl http://localhost:5000/api/health
 ```
 
-4) Access
+Open:
 - Frontend: http://localhost:3000
 - API: http://localhost:5000/api
 
-### Test Credentials (from `submission.json`)
+Test logins (from `submission.json`):
 - Super Admin: `superadmin@system.com` / `Admin@123`
-- Demo Tenant Admin: `admin@demo.com` / `Demo@123` (subdomain `demo`)
+- Demo Tenant Admin (subdomain `demo`): `admin@demo.com` / `Demo@123`
 - Demo Users: `user1@demo.com` / `User@123`, `user2@demo.com` / `User@123`
 
-### Stop / Clean
+Stop / clean:
 ```bash
 docker-compose down          # stop
-docker-compose down -v       # stop + drop volumes/data
+docker-compose down -v       # stop + wipe volumes/data
 ```
 
-## 🧭 Project Structure (condensed)
-```
-Multi-tenant-sass-platform/
-├── backend/
-│   ├── src/ (controllers, middleware, routes, config, utils)
-│   ├── migrations/*.sql     # SQL migrations
-│   ├── Dockerfile
-│   └── package.json
-├── frontend/
-│   ├── src/ (pages, layouts, components, context, services)
-│   ├── tailwind.config.js   # Vite palette tokens
-│   ├── Dockerfile
-│   └── package.json
-├── docs/ (api, architecture, PRD, research, diagrams)
-├── docker-compose.yml
-├── submission.json          # test credentials
-└── README.md
+## Running without Docker
+Backend:
+```bash
+cd backend
+npm install
+npm run migrate   # run SQL migrations
+npm run seed      # load demo data
+npm run dev
 ```
 
-## 🔗 API (summary)
-- `GET /api/health`
-- `POST /api/auth/login`
-- `POST /api/auth/register-tenant`
-- Tenants (super_admin): list / get / update
+Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+You’ll need PostgreSQL 15+ locally and `DATABASE_URL` set in `.env`.
+
+## Handy API summary
+- Auth: `POST /api/auth/login`, `POST /api/auth/register-tenant`
+- Health: `GET /api/health`
+- Tenants (super_admin): list, get, update
 - Users: CRUD + `GET /api/tenants/:id/users`
 - Projects: CRUD
 - Tasks: CRUD per project
-See [docs/api.md](docs/api.md) for full request/response details.
 
-## 🔒 Security
+Full details live in [docs/api.md](docs/api.md).
+
+## Project map
+```
+Multi-tenant-sass-platform/
+├── backend/        # API, middleware, audit, migrations
+├── frontend/       # React SPA
+├── docs/           # API, architecture, PRD, technical spec, diagrams
+├── docker-compose.yml
+├── submission.json # test credentials
+└── README.md
+```
+
+## Security highlights
 - bcrypt password hashing
-- JWT auth (24h expiry)
-- Parameterized DB queries
-- CORS restricted to frontend origin
-- Tenant isolation middleware
-- Audit logging with user/tenant context
-- Role-based access control
+- JWT auth (24h), RBAC middleware
+- Parameterized queries
+- CORS locked to the frontend
+- Tenant isolation in middleware
+- Audit logging on critical actions
 
-## 🛠️ Local Development (no Docker)
-Backend
-```bash
-cd backend
-npm install
-npm run dev
-npm run migrate   # run SQL migrations
-npm run seed      # seed demo data
-```
-Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Database
-- PostgreSQL 15+; set `DATABASE_URL` in `.env`.
+## Troubleshooting quick hits
+- Logs: `docker-compose logs backend|database|frontend`
+- Restart: `docker-compose restart`
+- Rerun migrations inside backend container: `docker-compose exec backend sh` then `npm run migrate`
+- Port conflicts? Adjust mappings in `docker-compose.yml`
 
-## 🧪 Testing (manual/API)
-1) `docker-compose up -d`
-2) Open http://localhost:3000 and login with seed users
-3) Create another tenant to verify isolation; compare tenant_admin vs user UI
-
-API quick checks:
-```bash
-curl http://localhost:5000/api/health
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@demo.com","password":"Demo@123","subdomain":"demo"}'
-```
-
-## 🎬 Demo Video
-Record a short walkthrough (Docker up, login, tenant isolation, project/task flow, RBAC UI) and add the link here when available.
-
-## 🚦 Environment
-Key env vars (see `.env`):
+## Environment you’ll touch most
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
-- `PORT` (default 5000)
-- `FRONTEND_URL` (default http://localhost:3000)
+- `PORT` (backend, default 5000)
+- `FRONTEND_URL` (CORS, default http://localhost:3000)
 - `VITE_API_BASE_URL` (frontend)
 
-## 🐛 Troubleshooting
-- Logs: `docker-compose logs backend|database|frontend`
-- Restart: `docker-compose restart`
-- Migrations inside backend container: `docker-compose exec backend sh` then `npm run migrate`
-- Port conflicts: adjust ports in `docker-compose.yml`
-
-## 📝 License
-Educational / evaluation use.
-
-## 📧 Contact
-For questions, open an issue or refer to the docs.
-# Multi-Tenant SaaS Platform
-
-A production-ready multi-tenant project and task management SaaS platform with complete tenant isolation, role-based access control, subscription plan limits, audit logging, and comprehensive Dockerization.
-
-## 🎯 Features
-
-- **Multi-Tenancy**: Complete data isolation with tenant-scoped queries and middleware enforcement
-- **Authentication & Authorization**: JWT-based auth with role-based access control (super_admin, tenant_admin, user)
-- **Subscription Plans**: Free, Pro, and Enterprise tiers with enforced user/project limits
-- **Project & Task Management**: Full CRUD operations with status tracking and assignment
-- **Audit Logging**: Comprehensive logging of all critical operations
-- **Dockerized**: One-command deployment with docker-compose
-- **RESTful API**: 19+ well-documented endpoints with consistent error handling
-- **Modern Frontend**: React SPA with protected routes and role-aware UI
-
-## 🏗️ Architecture
-
-### Tech Stack
-- **Backend**: Node.js 20, Express.js, Knex.js, PostgreSQL 15
-- **Frontend**: React 18, Vite 5, React Router 6, Axios
-- **Infrastructure**: Docker Compose, PostgreSQL Alpine, Node Alpine images
-
-### System Architecture
-```
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐
-│   React     │────▶│  Express    │────▶│  PostgreSQL  │
-│  Frontend   │◀────│   Backend   │◀────│   Database   │
-│  (Port 3000)│     │ (Port 5000) │     │  (Port 5432) │
-└─────────────┘     └─────────────┘     └──────────────┘
-```
-
-See [docs/images/system-architecture.txt](docs/images/system-architecture.txt) for detailed architecture diagram.
-
-### Database Schema
-See [docs/images/database-erd.txt](docs/images/database-erd.txt) for complete Entity Relationship Diagram.
-
-**Core Tables**:
-- `tenants` - Multi-tenant organizations
-- `users` - Users with role-based access
-- `projects` - Tenant-scoped projects
-- `tasks` - Project tasks with assignments
-- `audit_logs` - Audit trail for compliance
-
-## 🚀 Quick Start (Docker - Recommended)
-
-### Prerequisites
-- Docker 24+ and Docker Compose
-- Git
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone <your-repository-url>
-cd Multi-tenant-sass-platform
-```
-
-2. **Start all services with one command**
-```bash
-docker-compose up -d
-```
-
-This will:
-- Start PostgreSQL database on port 5432
-- Run database migrations automatically
-- Load seed data automatically
-- Start backend API on port 5000
-- Start frontend app on port 3000
-
-3. **Verify services are running**
-```bash
-docker-compose ps
-```
-
-Expected output:
-```
-NAME                                 STATUS
-multi-tenant-sass-platform-database-1   running (healthy)
-multi-tenant-sass-platform-backend-1    running (healthy)
-multi-tenant-sass-platform-frontend-1   running
-```
-
-4. **Access the application**
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000/api
-- **Health Check**: http://localhost:5000/api/health
-
-### Test Credentials
-
-Seed data includes the following accounts (passwords documented in [submission.json](submission.json)):
-
-**Super Admin** (global access):
-- Email: `superadmin@system.com`
-- Password: `Admin@123`
-
-**Demo Tenant Admin**:
-- Email: `admin@demo.com`
-- Password: `Demo@123`
-- Subdomain: `demo`
-
-**Demo Users**:
-- Email: `user1@demo.com` / Password: `User@123`
-- Email: `user2@demo.com` / Password: `User@123`
-
-### Stopping Services
-```bash
-docker-compose down
-```
-
-To remove volumes (deletes database data):
-```bash
-docker-compose down -v
-```
-
-## 📚 Documentation
-
-### Core Documentation
-- **[API Documentation](docs/api.md)** - Complete API reference for all 19+ endpoints
-- **[Architecture](docs/architecture.md)** - System design, database ERD, endpoint list
-- **[Technical Specification](docs/technical-spec.md)** - Project structure and setup guide
-- **[Product Requirements](docs/PRD.md)** - User personas, functional requirements (15+), non-functional requirements (5+)
-- **[Research Document](docs/research.md)** - Multi-tenancy analysis (1700+ words), technology stack justification, security considerations
-
-### Diagrams
-- **[System Architecture Diagram](docs/images/system-architecture.txt)** - High-level component architecture
-- **[Database ERD](docs/images/database-erd.txt)** - Complete entity relationship diagram with all tables, relationships, and constraints
-
-## 🔒 Security Features
-
-- ✅ **Password Hashing**: bcrypt with 10 salt rounds
-- ✅ **JWT Authentication**: Signed tokens with 24-hour expiry
-- ✅ **SQL Injection Prevention**: Parameterized queries via Knex
-- ✅ **XSS Protection**: React's built-in escaping + Helmet.js security headers
-- ✅ **CORS**: Restricted to frontend origin
-- ✅ **Tenant Isolation**: Middleware-enforced data separation
-- ✅ **Audit Logging**: All critical operations logged with user/tenant context
-- ✅ **Role-Based Access Control**: Three-tier RBAC (super_admin, tenant_admin, user)
-
-## 🛠️ Development Setup (Without Docker)
-
-### Backend
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Database
-Requires PostgreSQL 15+ running locally. Configure `DATABASE_URL` in `.env` file.
-
-**Run migrations and seeds**:
-```bash
-cd backend
-npm run migrate
-npm run seed
-```
-
-## 📁 Project Structure
-
-```
-Multi-tenant-sass-platform/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/      # Request handlers
-│   │   ├── services/          # Business logic
-│   │   ├── middleware/        # Auth, RBAC, tenant isolation
-│   │   ├── routes/            # API routes
-│   │   ├── config/            # Database & app config
-│   │   └── utils/             # Helper functions
-│   ├── migrations/            # Knex database migrations
-│   ├── seeds/                 # Seed data (auto-loaded)
-│   ├── Dockerfile             # Backend container definition
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── pages/             # React pages/views
-│   │   ├── components/        # Reusable React components
-│   │   ├── context/           # Auth context (JWT management)
-│   │   └── services/          # API client (Axios)
-│   ├── Dockerfile             # Frontend container definition
-│   └── package.json
-├── docs/
-│   ├── api.md                 # API documentation
-│   ├── architecture.md        # System architecture
-│   ├── PRD.md                 # Product requirements
-│   ├── research.md            # Technical research
-│   ├── technical-spec.md      # Technical specification
-│   └── images/                # Architecture diagrams
-├── docker-compose.yml         # Multi-service orchestration
-├── .env                       # Environment variables (dev)
-├── submission.json            # Test credentials for evaluation
-└── README.md                  # This file
-```
-
-## 🔗 API Endpoints
-
-**Authentication** (Public):
-- `POST /api/auth/register-tenant` - Register new tenant
-- `POST /api/auth/login` - User login
-
-**Health Check** (Public):
-- `GET /api/health` - API and database status
-
-**Tenants** (super_admin):
-- `GET /api/tenants` - List all tenants
-- `GET /api/tenants/:id` - Get tenant details with stats
-- `PATCH /api/tenants/:id` - Update tenant (status, plan)
-
-**Users** (authenticated):
-- `POST /api/users` - Create user (tenant_admin+)
-- `GET /api/users` - List users
-- `GET /api/users/:id` - Get user details
-- `PATCH /api/users/:id` - Update user (tenant_admin+)
-- `DELETE /api/users/:id` - Delete user (tenant_admin+)
-- `GET /api/tenants/:id/users` - List tenant users
-
-**Projects** (authenticated):
-- `POST /api/projects` - Create project (tenant_admin)
-- `GET /api/projects` - List projects
-- `GET /api/projects/:id` - Get project details
-- `PATCH /api/projects/:id` - Update project (tenant_admin)
-- `DELETE /api/projects/:id` - Delete project (tenant_admin)
-
-**Tasks** (authenticated):
-- `POST /api/projects/:projectId/tasks` - Create task
-- `GET /api/projects/:projectId/tasks` - List tasks
-- `PATCH /api/projects/:projectId/tasks/:id` - Update task
-- `DELETE /api/projects/:projectId/tasks/:id` - Delete task (tenant_admin)
-
-See [docs/api.md](docs/api.md) for complete request/response examples.
-
-## 🎬 Demo Video
-
-**YouTube Link**: [Demo Video](https://youtu.be/YOUR_VIDEO_ID)
-
-**Video Contents** (5-12 minutes):
-1. Introduction & architecture overview
-2. Docker deployment demonstration
-3. Multi-tenancy demonstration (tenant isolation)
-4. User registration and login
-5. Project and task management
-6. Role-based access control demonstration
-7. Code walkthrough (key components)
-
-## 🧪 Testing
-
-### Manual Testing
-1. Start services: `docker-compose up -d`
-2. Open frontend: http://localhost:3000
-3. Login with test credentials (see above)
-4. Test tenant isolation by creating second tenant
-5. Verify role-based UI (admin vs user views)
-
-### API Testing
-```bash
-# Health check
-curl http://localhost:5000/api/health
-
-# Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@demo.com","password":"Demo@123","subdomain":"demo"}'
-
-# List projects (replace TOKEN)
-curl http://localhost:5000/api/projects \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## 📊 Subscription Plans
-
-| Feature | Free | Pro | Enterprise |
-|---------|------|-----|------------|
-| Max Users | 5 | 25 | 100 |
-| Max Projects | 3 | 15 | 50 |
-| Support | Community | Email | Priority |
-
-Plan limits are enforced at the service layer before user/project creation.
-
-## 🚦 Environment Variables
-
-All required environment variables are in the `.env` file (committed for development/evaluation).
-
-**Key Variables**:
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret (min 32 chars)
-- `JWT_EXPIRES_IN` - Token expiration (default: 24h)
-- `PORT` - Backend port (5000)
-- `FRONTEND_URL` - CORS origin (http://localhost:3000)
-- `VITE_API_BASE_URL` - Frontend API endpoint
-
-## 🐛 Troubleshooting
-
-### Services won't start
-```bash
-# Check service logs
-docker-compose logs backend
-docker-compose logs database
-docker-compose logs frontend
-
-# Restart services
-docker-compose restart
-```
-
-### Database migration issues
-```bash
-# Access backend container
-docker-compose exec backend sh
-
-# Manually run migrations
-npm run migrate
-
-# Check migration status
-npm run migrate:status
-```
-
-### Frontend can't connect to backend
-1. Verify backend is running: `docker-compose ps backend`
-2. Check backend health: `curl http://localhost:5000/api/health`
-3. Verify CORS settings in backend `.env`
-4. Check browser console for errors
-
-### Port conflicts
-If ports 3000, 5000, or 5432 are already in use, stop conflicting services or modify port mappings in `docker-compose.yml`.
-
-## 🤝 Contributing
-
-This is a demonstration project for evaluation. For production use, consider:
-- Adding comprehensive test coverage (Jest, Supertest)
-- Implementing refresh token pattern
-- Adding rate limiting
-- Integrating input validation library (Joi)
-- Setting up CI/CD pipeline
-- Adding monitoring and alerting (Prometheus, Grafana)
-- Implementing caching layer (Redis)
-
-## 📝 License
-
-This project is created for educational and evaluation purposes.
-
-## 📧 Contact
-
-For questions or issues, please refer to the documentation or create an issue in the repository.
+## If you’re demoing
+- Show tenant isolation: create a second tenant and compare data visibility.
+- Show roles: log in as super admin vs tenant admin vs user.
+- Create a project and tasks; watch audit logs.
+
+## Contributing / next steps
+This repo is set up for evaluation. If you extend it, consider: tests (Jest/Supertest), rate limiting, input validation (Joi/Zod), refresh tokens, CI/CD, metrics/alerts, caching.
 
 ---
 
-**Evaluation Ready**: ✅ Docker containerization | ✅ Automatic migrations/seeds | ✅ 19+ API endpoints | ✅ Complete documentation | ✅ Test credentials in submission.json
+Made with ☕ and a focus on clear multi-tenant rails—enjoy!

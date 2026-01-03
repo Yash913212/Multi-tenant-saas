@@ -127,7 +127,7 @@ const UserList = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-vite-text">
-          {isSuperAdmin ? 'All System Users' : 'Team Members'}
+          Users
         </h2>
         
         {/* Hide Add button for Super Admin in this simple view to prevent complexity */}

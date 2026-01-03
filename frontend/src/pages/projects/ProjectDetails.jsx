@@ -223,6 +223,13 @@ const ProjectDetails = () => {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const statusMeta = {
+    todo: { label: 'To Do', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
+    in_progress: { label: 'In Progress', tone: 'bg-amber-100 text-amber-700 border-amber-200' },
+    completed: { label: 'Completed', tone: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+  };
+  const statusOrder = ['todo', 'in_progress', 'completed'];
   
   // Project Edit State
   const [isEditingProject, setIsEditingProject] = useState(false);
@@ -242,24 +249,31 @@ const ProjectDetails = () => {
   }, [id]);
 
   const fetchProjectData = async () => {
+    setLoading(true);
     try {
       const [projRes, taskRes] = await Promise.all([
-        api.get(`/projects`),
+        api.get(`/projects/${id}`),
         api.get(`/tasks?projectId=${id}`)
       ]);
-      
-      const foundProject = projRes.data.data.find(p => p.id === id);
-      if (!foundProject) {
-        navigate('/projects'); 
+
+      const projectData = projRes?.data?.data;
+      if (!projectData) {
+        navigate('/projects');
         return;
       }
-      
-      setProject(foundProject);
-      setEditProjName(foundProject.name);
-      setEditProjDesc(foundProject.description);
-      setTasks(taskRes.data.data);
+
+      setProject(projectData);
+      setEditProjName(projectData.name || '');
+      setEditProjDesc(projectData.description || '');
+
+      const tasksData = taskRes?.data?.data;
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
     } catch (err) {
-      console.error("Failed to load project", err);
+      if (err?.response?.status === 404) {
+        navigate('/projects');
+      } else {
+        console.error("Failed to load project", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -298,10 +312,9 @@ const ProjectDetails = () => {
   };
 
   // --- 4. TOGGLE TASK STATUS ---
-  const handleToggleStatus = async (task) => {
-    const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+  const handleStatusChange = async (taskId, status) => {
     try {
-      await api.patch(`/tasks/${task.id}/status`, { status: newStatus });
+      await api.patch(`/tasks/${taskId}/status`, { status });
       fetchProjectData();
     } catch (err) { console.error(err); }
   };
@@ -369,57 +382,98 @@ const ProjectDetails = () => {
         )}
       </div>
 
-      {/* --- TASKS LIST --- */}
-      <div className="space-y-3">
-        {tasks.map(task => (
-          <div key={task.id} className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between ${task.status === 'completed' ? 'opacity-60' : ''}`}>
-            
-            {/* TASK EDIT MODE */}
-            {editingTaskId === task.id ? (
-              <div className="flex-1 flex items-center space-x-2">
-                <input 
-                  value={editTaskTitle}
-                  onChange={(e) => setEditTaskTitle(e.target.value)}
-                  className="flex-1 border-b border-blue-500 focus:outline-none px-1"
-                  autoFocus
-                />
-                <button onClick={() => saveTaskEdit(task.id)} className="text-green-600 hover:bg-green-50 p-1 rounded"><CheckCircle className="w-5 h-5"/></button>
-                <button onClick={() => setEditingTaskId(null)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-5 h-5"/></button>
-              </div>
-            ) : (
-              // TASK VIEW MODE
-              <div className="flex items-center flex-1">
-                <button onClick={() => handleToggleStatus(task)} className="mr-3 text-gray-400 hover:text-green-600">
-                  {task.status === 'completed' ? <CheckCircle className="w-6 h-6 text-green-500" /> : <Circle className="w-6 h-6" />}
-                </button>
-                <div className="flex-1">
-                  <div className="flex items-center group">
-                    <h4 className={`font-medium mr-2 ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                      {task.title}
-                    </h4>
-                    {/* Pencil only appears on hover */}
-                    <button onClick={() => startEditingTask(task)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity">
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded uppercase ${
-                    task.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {task.priority}
-                  </span>
+      {/* --- TASKS BY STATUS (Kanban-style) --- */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {statusOrder.map((statusKey) => {
+          const bucket = tasks.filter((t) => t.status === statusKey);
+          const meta = statusMeta[statusKey];
+          return (
+            <div key={statusKey} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${meta.tone}`}>{meta.label}</span>
+                  <span className="text-xs text-gray-500">{bucket.length} task{bucket.length === 1 ? '' : 's'}</span>
                 </div>
+                {statusKey === 'todo' && (
+                  <button 
+                    onClick={() => setShowTaskModal(true)}
+                    className="text-[var(--vite-primary,#646cff)] text-sm font-semibold hover:underline"
+                  >
+                    + Add
+                  </button>
+                )}
               </div>
-            )}
 
-            {/* DELETE BUTTON (Always visible) */}
-            {editingTaskId !== task.id && (
-              <button onClick={() => handleDeleteTask(task.id)} className="ml-4 text-gray-400 hover:text-red-500">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        ))}
-        {tasks.length === 0 && <p className="text-center text-gray-500 py-8">No tasks yet.</p>}
+              <div className="space-y-3">
+                {bucket.map((task) => (
+                  <div key={task.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    {editingTaskId === task.id ? (
+                      <div className="space-y-2">
+                        <input
+                          value={editTaskTitle}
+                          onChange={(e) => setEditTaskTitle(e.target.value)}
+                          className="w-full border-b border-blue-500 focus:outline-none px-1"
+                          autoFocus
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button onClick={() => saveTaskEdit(task.id)} className="text-green-600 hover:bg-green-50 p-1 rounded"><CheckCircle className="w-5 h-5"/></button>
+                          <button onClick={() => setEditingTaskId(null)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-5 h-5"/></button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center group">
+                              <h4 className={`font-medium mr-2 ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                {task.title}
+                              </h4>
+                              <button onClick={() => startEditingTask(task)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity" title="Edit title">
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-wide ${
+                                task.priority === 'high'
+                                  ? 'bg-red-100 text-red-800'
+                                  : task.priority === 'medium'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {task.priority}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-gray-200 text-gray-700 uppercase">{meta.label}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => handleDeleteTask(task.id)} className="ml-3 text-gray-400 hover:text-red-500" title="Delete task">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-3">
+                          <span className="text-xs text-gray-500">Move to:</span>
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                            className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--vite-primary,#646cff)] bg-white"
+                          >
+                            {statusOrder.map((s) => (
+                              <option key={s} value={s}>{statusMeta[s].label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+
+                {bucket.length === 0 && (
+                  <p className="text-sm text-gray-400 border border-dashed border-gray-200 rounded-md p-3 text-center">No tasks here yet.</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* --- ADD TASK MODAL --- */}
